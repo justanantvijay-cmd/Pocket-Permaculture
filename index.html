@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d1a10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Pocket Permaculture</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ---- Base / resets ---- */
+  * { box-sizing: border-box; }
+  body { touch-action: manipulation; margin: 0; }
+  .grid-cell { aspect-ratio: 1; }
+  .font-display { font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI Rounded', sans-serif; }
+  .font-body { font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif; }
+  .font-mono-stat { font-family: 'Space Mono', ui-monospace, 'Courier New', monospace; }
+  .hidden { display: none !important; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  .seed-packet {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15));
+    border: 1px solid rgba(214,169,79,0.25);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .seed-packet-band {
+    border-bottom: 2px dashed rgba(0,0,0,0.35);
+  }
+  .modal-backdrop {
+    background: rgba(8,14,9,0.82);
+    backdrop-filter: blur(2px);
+  }
+  /* CSS-drawn texture instead of an emoji glyph — some newer Unicode emoji (like 🪨)
+     have inconsistent font coverage across devices/browsers, so this stays reliable
+     everywhere rather than risking a blank/missing glyph. */
+  .tile-rocky {
+    background-color: #1a1a18;
+    background-image: repeating-linear-gradient(45deg, #35342f 0, #35342f 3px, transparent 3px, transparent 9px),
+                       repeating-linear-gradient(-45deg, #2a2926 0, #2a2926 3px, transparent 3px, transparent 9px);
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #345c3a; border-radius: 4px; }
+
+  /* ---- Self-contained utility layer (replaces the Tailwind CDN JIT compiler) ----
+     This is a static, offline stylesheet covering exactly the classes this file
+     uses, so the game has zero runtime CDN dependency — required for it to work
+     packaged in a WebView / with no network access on an Android device. ---- */
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .flex-1 { flex: 1 1 0%; }
+  .grid { display: grid; }
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .items-center { align-items: center; }
+  .items-end { align-items: flex-end; }
+  .justify-between { justify-content: space-between; }
+  .justify-center { justify-content: center; }
+  .gap-1 { gap: 0.25rem; }
+  .gap-1\.5 { gap: 0.375rem; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-3 { gap: 0.75rem; }
+  .gap-4 { gap: 1rem; }
+  .p-1 { padding: 0.25rem; }
+  .p-1\.5 { padding: 0.375rem; }
+  .p-2 { padding: 0.5rem; }
+  .p-2\.5 { padding: 0.625rem; }
+  .p-3 { padding: 0.75rem; }
+  .p-4 { padding: 1rem; }
+  .px-0\.5 { padding-left: 0.125rem; padding-right: 0.125rem; }
+  .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+  .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+  .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+  .pl-1 { padding-left: 0.25rem; }
+  .pb-1 { padding-bottom: 0.25rem; }
+  .pb-3 { padding-bottom: 0.75rem; }
+  .pt-0 { padding-top: 0; }
+  .pt-1 { padding-top: 0.25rem; }
+  .mb-1 { margin-bottom: 0.25rem; }
+  .mb-2 { margin-bottom: 0.5rem; }
+  .mb-4 { margin-bottom: 1rem; }
+  .mt-0\.5 { margin-top: 0.125rem; }
+  .mt-1 { margin-top: 0.25rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .w-full { width: 100%; }
+  .w-6 { width: 1.5rem; }
+  .h-6 { height: 1.5rem; }
+  .h-10 { height: 2.5rem; }
+  .min-h-screen { min-height: 100vh; }
+  .max-w-md { max-width: 28rem; }
+  .relative { position: relative; }
+  .absolute { position: absolute; }
+  .fixed { position: fixed; }
+  .sticky { position: sticky; }
+  .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+  .top-0 { top: 0; }
+  .top-0\.5 { top: 0.125rem; }
+  .left-0\.5 { left: 0.125rem; }
+  .right-0\.5 { right: 0.125rem; }
+  .z-50 { z-index: 50; }
+  .border { border-width: 1px; border-style: solid; border-color: currentColor; }
+  .border-2 { border-width: 2px; border-style: solid; border-color: currentColor; }
+  .border-b { border-bottom-width: 1px; border-style: solid; border-color: currentColor; }
+  .border-transparent { border-color: transparent; }
+  .rounded { border-radius: 0.25rem; }
+  .rounded-lg { border-radius: 0.5rem; }
+  .rounded-xl { border-radius: 0.75rem; }
+  .rounded-2xl { border-radius: 1rem; }
+  .rounded-full { border-radius: 9999px; }
+  .ring-2 { box-shadow: 0 0 0 2px var(--ring-color, rgba(255,255,255,0.4)); }
+  .font-bold { font-weight: 700; }
+  .font-semibold { font-weight: 600; }
+  .font-medium { font-weight: 500; }
+  .font-normal { font-weight: 400; }
+  .text-xs { font-size: 0.75rem; line-height: 1rem; }
+  .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+  .text-base { font-size: 1rem; line-height: 1.5rem; }
+  .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+  .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+  .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+  .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+  .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+  .text-center { text-align: center; }
+  .text-left { text-align: left; }
+  .text-right { text-align: right; }
+  .uppercase { text-transform: uppercase; }
+  .tracking-wide { letter-spacing: 0.025em; }
+  .leading-none { line-height: 1; }
+  .list-decimal { list-style-type: decimal; }
+  .list-inside { list-style-position: inside; }
+  .whitespace-nowrap { white-space: nowrap; }
+  .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.3); }
+  .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.35), 0 8px 10px -6px rgba(0,0,0,0.35); }
+  .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+  .shadow-inner { box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.3); }
+  .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  .transition-all { transition-property: all; transition-duration: 150ms; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  .cursor-pointer { cursor: pointer; }
+  .overflow-hidden { overflow: hidden; }
+  .overflow-y-auto { overflow-y: auto; }
+  .space-y-1 { display: flex; flex-direction: column; gap: 0.25rem; }
+  .text-\[10px\] { font-size: 10px; }
+  .text-\[11px\] { font-size: 11px; }
+  .text-\[6\.5px\] { font-size: 6.5px; }
+  .text-\[7px\] { font-size: 7px; }
+  .text-\[8px\] { font-size: 8px; }
+  .text-\[9px\] { font-size: 9px; }
+  .max-h-\[85vh\] { max-height: 85vh; }
+  .bg-moss-950 { background-color: #0c1810; }
+  .bg-moss-900 { background-color: #122415; }
+  .bg-moss-800 { background-color: #1a331f; }
+  .bg-moss-700 { background-color: #25452a; }
+  .bg-moss-950\/60 { background-color: rgba(12, 24, 16, 0.60); }
+  .bg-moss-950\/70 { background-color: rgba(12, 24, 16, 0.70); }
+  .bg-moss-950\/80 { background-color: rgba(12, 24, 16, 0.80); }
+  .bg-moss-800\/80 { background-color: rgba(26, 51, 31, 0.80); }
+  .bg-clay-700\/60 { background-color: rgba(122, 60, 36, 0.60); }
+  .bg-clay-600 { background-color: #994f30; }
+  .bg-gold-600 { background-color: #bb8b37; }
+  .bg-gold-700\/20 { background-color: rgba(150, 109, 39, 0.20); }
+  .bg-gold-700\/30 { background-color: rgba(150, 109, 39, 0.30); }
+  .bg-gold-600\/20 { background-color: rgba(187, 139, 55, 0.20); }
+  .bg-blue-600\/40 { background-color: rgba(37, 99, 235, 0.40); }
+  .bg-emerald-700\/25 { background-color: rgba(4, 120, 87, 0.25); }
+  .bg-emerald-500\/40 { background-color: rgba(16, 185, 129, 0.40); }
+  .bg-rose-950\/80 { background-color: rgba(76, 5, 25, 0.80); }
+  .bg-rose-600 { background-color: #e11d48; }
+  .text-stone-100 { color: #f5f5f4; }
+  .text-stone-200 { color: #e7e5e4; }
+  .text-stone-300 { color: #d6d3d1; }
+  .text-stone-400 { color: #a8a29e; }
+  .text-stone-500 { color: #78716c; }
+  .text-gold-200 { color: #f7e9c8; }
+  .text-gold-300 { color: #f2ddac; }
+  .text-gold-300\/80 { color: rgba(242, 221, 172, 0.80); }
+  .text-gold-400 { color: #e5c37c; }
+  .text-moss-950 { color: #0c1810; }
+  .text-emerald-200 { color: #a7f3d0; }
+  .text-emerald-300 { color: #6ee7b7; }
+  .text-emerald-400 { color: #34d399; }
+  .text-rose-300 { color: #fda4af; }
+  .text-rose-400 { color: #fb7185; }
+  .text-blue-200 { color: #bfdbfe; }
+  .text-blue-300 { color: #93c5fd; }
+  .text-amber-300 { color: #fcd34d; }
+  .text-yellow-300 { color: #fde047; }
+  .text-white { color: #ffffff; }
+  .border-moss-700 { border-color: #25452a; }
+  .border-moss-600 { border-color: #345c3a; }
+  .border-clay-700 { border-color: #7a3c24; }
+  .border-emerald-400 { border-color: #34d399; }
+  .border-emerald-500\/40 { border-color: rgba(16, 185, 129, 0.40); }
+  .border-gold-500\/40 { border-color: rgba(214, 169, 79, 0.40); }
+  .border-gold-600\/30 { border-color: rgba(187, 139, 55, 0.30); }
+  .border-gold-700\/40 { border-color: rgba(150, 109, 39, 0.40); }
+  .border-rose-500 { border-color: #f43f5e; }
+  .border-rose-800 { border-color: #9f1239; }
+  .ring-emerald-400 { --ring-color: #34d399; }
+  .ring-rose-500 { --ring-color: #f43f5e; }
+  .hover\:bg-clay-500:hover { background-color: #b8663f; }
+  .hover\:bg-gold-500:hover { background-color: #d6a94f; }
+  .hover\:bg-gold-600\/30:hover { background-color: rgba(187, 139, 55, 0.30); }
+  .hover\:bg-emerald-700\/35:hover { background-color: rgba(4, 120, 87, 0.35); }
+  .hover\:text-stone-200:hover { color: #e7e5e4; }
+  @media (min-width: 640px) { .sm\:items-center { align-items: center; } }
+
+  /* additional tokens used in dynamically-assigned className strings */
+  .border-gold-400 { border-color: #e5c37c; }
+  .bg-gold-500\/40 { background-color: rgba(214, 169, 79, 0.40); }
+  .bg-rose-600\/50 { background-color: rgba(225, 29, 72, 0.50); }
+  .text-rose-200 { color: #fecdd3; }
+  .bg-blue-950\/80 { background-color: rgba(23, 37, 84, 0.80); }
+  .border-blue-500 { border-color: #3b82f6; }
+  .bg-emerald-600 { background-color: #059669; }
+  .text-amber-400 { color: #fbbf24; }
+</style>
+</head>
+<body class="bg-moss-950 text-stone-100 font-body min-h-screen flex flex-col items-center p-3">
+
+  <!-- ============ CITY SELECT SCREEN ============ -->
+  <div id="screen-city-select" class="w-full max-w-md flex flex-col items-center gap-4 py-4">
+    <header class="flex flex-col items-center gap-1 mt-2 mb-1 text-center">
+      <div class="text-4xl">🌱</div>
+      <h1 class="font-display text-2xl font-bold text-gold-400 tracking-wide">Pocket Permaculture</h1>
+      <p class="text-stone-400 text-xs">Pick a balcony. Grow a guild. Anywhere in the world.</p>
+    </header>
+
+    <div id="city-card-list" class="w-full flex flex-col gap-3"></div>
+
+    <p class="text-stone-500 text-[10px] text-center px-6 mt-1">Each city has its own weather odds — monsoon, heatwave, and everything between. You can switch cities later from the 🔁 button in-game (your plot resets when you do).</p>
+  </div>
+
+  <!-- ============ TUTORIAL MODAL ============ -->
+  <div id="tutorial-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-end sm:items-center justify-center p-3">
+    <div class="w-full max-w-md max-h-[85vh] overflow-y-auto bg-moss-900 border border-gold-700/40 rounded-2xl shadow-2xl">
+      <div class="sticky top-0 bg-moss-900 border-b border-moss-700 px-4 py-3 flex items-center justify-between">
+        <h2 class="font-display text-lg font-bold text-gold-400">❓ How to Play</h2>
+        <button onclick="hideTutorial()" class="text-stone-400 hover:text-stone-200 text-xl leading-none px-2">✕</button>
+      </div>
+      <div class="p-4 flex flex-col gap-4 text-sm text-stone-300">
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🎯 Goal</h3>
+          <p>Grow a thriving balcony plot. Plant crops, keep them watered, protect them from pests and weather, then harvest for coins or heirloom seeds.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">👆 Actions</h3>
+          <p>Pick a tool from the row below the grid, then tap a tile. 💧 Spray waters a tile. Plant tools buy (or use a saved seed) and plant a crop on an empty tile. Tapping a pest-infested tile clears the bugs. Use <span class="text-amber-300">🧺 Process Harvest</span> to collect any crop at full maturity.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🕐 Time</h3>
+          <p>Time doesn't pass on its own — watering, planting, and clearing pests each nudge the clock forward, and every few of those a full day ticks by (weather rolls, crops grow, the market shifts). In a hurry? ⏩ Fast-Forward spends 1 energy to skip straight to the next day.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🔁 Regrowth</h3>
+          <p class="mb-1">Basil, tomato, marigold, chili, mint, and okra are cut-and-come-again — harvest them and they stay on the tile, flushing again. Bean and spinach are a one-time flush — harvesting clears the tile and you'll need to replant (they sell for more per harvest to make up for it).</p>
+          <p>Repeatedly harvesting a regrowing plant depletes its soil — 🍂 next to its moisture % means it's regrowing slower. A neighboring 🫘 bean (Nitrogen Fix) sustains or restores it, so a regrower planted alone will wear out, but one kept near a bean stays productive indefinitely.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">✨ Guilds</h3>
+          <p class="mb-1">Plants react to their neighbors, checked in this priority order:</p>
+          <ol class="list-decimal list-inside space-y-1 text-stone-400">
+            <li><span class="text-emerald-300 font-semibold">Companion Guild</span> — basil next to tomato (Aroma) or chili (Spice) boosts growth for both.</li>
+            <li><span class="text-amber-300 font-semibold">Nitrogen Fix</span> — 🫘 bean cuts water use and feeds neighboring tiles.</li>
+            <li><span class="text-yellow-300 font-semibold">Pest Shield</span> — 🌼 marigold protects neighbors from outbreaks.</li>
+            <li><span class="text-rose-300 font-semibold">Mint-Choked</span> — 🍃 mint grows fast but stunts non-mint neighbors.</li>
+          </ol>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🌦️ Weather</h3>
+          <p>☀️ Heatwaves triple evaporation (less for drought-tolerant crops like chili &amp; okra), wilt cold-loving spinach, and spike prices for heat-loving crops. 🌧️ Monsoons fully water your plot but soften prices. Heatwave odds and pest pressure both climb as a season goes on — the back half is tougher than the front, so plan ahead.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🐛 Pests</h3>
+          <p>Outbreaks strike unshielded plants at random, stall their growth, and can set them back a stage. Tap an infested tile to clear it.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">📅 Seasons</h3>
+          <p class="mb-1">Each season runs 21 days. Two goals are tracked all season — a coin target and a peak-guilds target, shown just above the grid. At day 21 you get a Harvest Festival recap with a title based on what you hit, and a fresh plot for the next season (coins and saved seeds carry over).</p>
+          <p>A few 🪨 rocky tiles are off-limits each season, and later seasons have more of them — the same 4x4 grid, less room to work with. Seasons 1 and 2 also unlock new plants: chili &amp; mint arrive after Season 1, okra &amp; spinach after Season 2.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🎁 Foraging</h3>
+          <p>🌿 Forage Neighborhood usually turns up a seed you've already unlocked. Every so often it's a surprise gift instead — a seed for a plant you haven't unlocked yet. It's saved for you and shows up the moment that plant becomes available.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">📈 Market</h3>
+          <p>Selling the same crop over and over floods the market and temporarily depresses its own price — diversifying (and leaning on guild pairings) keeps your returns healthier than monoculture.</p>
+        </section>
+        <section>
+          <h3 class="font-display text-gold-400 font-bold mb-1">🏙️ Cities</h3>
+          <p>Mumbai, Phoenix, and London each carry different monsoon/heatwave odds, evaporation rates, and growth speed. Use 🔁 Change City anytime to relocate — your plot resets, but coins, saved seeds, and season progress carry over.</p>
+        </section>
+      </div>
+      <div class="p-4 pt-0">
+        <button onclick="hideTutorial()" class="w-full bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-2.5 rounded-xl">Got it, let's grow 🌱</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HARVEST FESTIVAL RECAP MODAL ============ -->
+  <div id="recap-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-end sm:items-center justify-center p-3">
+    <div class="w-full max-w-md max-h-[85vh] overflow-y-auto bg-moss-900 border border-gold-700/40 rounded-2xl shadow-2xl">
+      <div class="seed-packet-band bg-gold-700/30 px-4 py-4 text-center">
+        <div class="text-3xl mb-1">🎉</div>
+        <h2 class="font-display text-xl font-bold text-gold-300">Harvest Festival</h2>
+        <p class="text-[11px] text-stone-400">Season <span id="recap-season-num">1</span> complete</p>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="text-center">
+          <span id="recap-title" class="font-display text-lg font-bold text-emerald-300">🌱 Balcony Beginner</span>
+        </div>
+        <div class="flex flex-col gap-1.5 text-xs font-mono-stat">
+          <div class="bg-moss-950/60 rounded px-2.5 py-1.5 flex justify-between"><span class="text-stone-400 font-body">Coins earned this season</span><span id="recap-coins" class="text-gold-300">🪙 0 / 0 goal</span></div>
+          <div class="bg-moss-950/60 rounded px-2.5 py-1.5 flex justify-between"><span class="text-stone-400 font-body">Peak guilds formed</span><span id="recap-guilds" class="text-emerald-300">✨ 0 / 0 goal</span></div>
+          <div class="bg-moss-950/60 rounded px-2.5 py-1.5 flex justify-between"><span class="text-stone-400 font-body">Heirlooms</span><span id="recap-heirlooms" class="text-blue-300">👑 0</span></div>
+        </div>
+        <div id="recap-unlocks" class="hidden bg-emerald-700/25 border border-emerald-500/40 text-emerald-300 rounded-lg px-3 py-2 text-xs font-bold text-center"></div>
+        <p class="text-[10px] text-stone-500 text-center">A fresh plot awaits — coins and saved seeds carry over. Weather &amp; pests get a little tougher each season.</p>
+      </div>
+      <div class="p-4 pt-0">
+        <button onclick="startNextSeason()" class="w-full bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-2.5 rounded-xl">Start Next Season →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <div id="screen-game" class="hidden w-full max-w-md flex flex-col gap-2">
+
+    <!-- Header Stats Bar -->
+    <header class="w-full bg-moss-800 rounded-xl p-3 shadow-lg border border-moss-700 flex justify-between items-center text-xs">
+      <div class="font-mono-stat"><span class="text-stone-400 font-body">Coins:</span> <span id="coins" class="font-bold text-gold-400">🪙 60</span></div>
+      <div class="font-mono-stat"><span class="text-stone-400 font-body">Energy:</span> <span id="energy" class="font-bold text-emerald-400">⚡ 10</span></div>
+      <div class="font-mono-stat"><span class="text-stone-400 font-body">Threat:</span> <span id="threat-level" class="font-bold text-rose-400">🐛 Low</span></div>
+      <button onclick="showTutorial()" class="w-6 h-6 flex items-center justify-center rounded-full bg-moss-700 border border-gold-700/40 text-gold-400 font-bold text-xs">❓</button>
+    </header>
+
+    <!-- City Context Bar -->
+    <section class="w-full bg-moss-800 rounded-xl px-3 py-2 border border-moss-700 flex items-center justify-between text-xs">
+      <div>
+        <div id="city-effect" class="text-gold-300 font-semibold">Mumbai: High Monsoon Chance</div>
+        <div id="day-counter" class="text-stone-400 text-[10px] font-mono-stat mt-0.5">Day 1/21 · Season 1</div>
+        <div id="action-progress" class="text-stone-500 text-[9px] font-mono-stat mt-0.5">🕐 3 actions until next day (or ⏩ Fast-Forward)</div>
+      </div>
+      <button onclick="changeCity()" class="px-2 py-1 rounded-lg font-bold bg-clay-600 hover:bg-clay-500 text-white text-[11px] whitespace-nowrap">🔁 Change City</button>
+    </section>
+
+    <!-- Weather Alert Banner -->
+    <section id="weather-banner" class="w-full bg-gold-700/20 border border-gold-500/40 text-gold-200 rounded-xl px-3 py-1.5 flex justify-between items-center text-xs font-semibold">
+      <span id="weather-status">🌤️ Weather: Clear Skies</span>
+      <span id="weather-effect" class="text-[10px] text-gold-300/80 font-normal">Normal Evaporation</span>
+    </section>
+
+    <!-- Live Market Ticker Board -->
+    <section class="w-full bg-moss-950/80 rounded-xl p-2.5 shadow-inner border border-gold-600/30">
+      <div class="flex justify-between items-center text-[10px] text-gold-300 font-bold mb-1 border-b border-moss-700 pb-1">
+        <span>📈 CITY MARKET BOARD</span>
+        <span id="market-timer" class="text-stone-400 font-normal font-mono-stat">Shift in: 3 days</span>
+      </div>
+      <div id="market-board" class="grid grid-cols-4 gap-1 text-[9px] text-center"></div>
+    </section>
+
+    <!-- Main Game Canvas / Grid -->
+    <main class="w-full bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700">
+      <div class="flex justify-between items-center mb-2 text-[11px]">
+        <span class="text-gold-300 font-medium">Plot Status</span>
+        <span id="guild-status" class="text-emerald-400 font-bold">✨ Guilds: 0</span>
+      </div>
+
+      <div id="season-goals" class="flex justify-between items-center bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-1.5 mb-2 text-[10px]"></div>
+
+      <div id="grid" class="grid grid-cols-4 gap-2 mb-2"></div>
+
+      <!-- Selection Indicator Bar -->
+      <div id="selection-indicator" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-1.5 mb-2 text-[10px] flex items-center gap-1.5">
+        <span id="sel-icon" class="text-base leading-none">💧</span>
+        <span><span id="sel-name" class="font-bold text-gold-300">Spray</span> <span id="sel-desc" class="text-stone-400">— tap a tile to add moisture.</span></span>
+      </div>
+
+      <!-- Harvest Mode Selector -->
+      <div class="bg-moss-950 p-1.5 rounded-lg border border-moss-700 mb-2 flex items-center justify-between text-xs">
+        <span class="text-stone-400 text-[10px] uppercase font-bold pl-1">Harvest Goal:</span>
+        <div class="flex gap-1">
+          <button id="mode-cash" onclick="setHarvestMode('cash')" class="px-2.5 py-1 rounded font-bold bg-gold-600 text-moss-950">🪙 Sell Cash</button>
+          <button id="mode-seeds" onclick="setHarvestMode('seeds')" class="px-2.5 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700">🧬 Save Seeds</button>
+        </div>
+      </div>
+
+      <!-- Gift seeds: locked-plant seeds found while foraging, saved for later -->
+      <div id="gift-seeds-banner" class="hidden bg-emerald-700/25 border border-emerald-500/40 text-emerald-300 rounded-lg px-2.5 py-1.5 mb-2 text-[9px] font-bold text-center"></div>
+
+      <!-- Plant Tool Selector (seed-packet style, water + unlocked plants) -->
+      <div id="tool-grid" class="grid grid-cols-3 gap-1.5 text-[10px] mb-2"></div>
+
+      <button onclick="harvestAll()" class="w-full bg-gold-600 hover:bg-gold-500 text-moss-950 py-2 rounded-lg font-display font-bold">🧺 Process Harvest</button>
+    </main>
+
+    <!-- Foraging & Travel Footer -->
+    <footer class="w-full bg-moss-800 rounded-xl p-3 border border-moss-700 flex flex-col gap-2 mb-4">
+      <div class="flex gap-2">
+        <button onclick="forageWildSeeds()" class="flex-1 bg-emerald-700/25 text-emerald-300 border border-emerald-500/40 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700/35">
+          🌿 Forage Neighborhood (1 ⚡)
+        </button>
+        <button onclick="fastForward()" class="flex-1 bg-gold-600/20 text-gold-300 border border-gold-500/40 py-2 rounded-lg text-xs font-bold hover:bg-gold-600/30">
+          ⏩ Skip to Next Day (1 ⚡)
+        </button>
+      </div>
+      <div id="log" class="text-[10px] text-stone-400 bg-moss-950/60 p-2 rounded border border-moss-700 h-10 overflow-y-auto">
+        Pick a city above to start your balcony plot!
+      </div>
+    </footer>
+  </div>
+
+<script>
+  const GRID_ROWS = 4, GRID_COLS = 4, GRID_SIZE = 16;
+
+  let coins = 60, energy = 10, selectedTool = 'water', currentCity = 'mumbai';
+  let harvestMode = 'cash';
+  let marketShiftCountdown = 3;
+  let currentScreen = 'city-select';
+  let tutorialShown = false;
+
+  // Time now passes from what the player DOES (water/plant/clear pest), not a real-time clock.
+  const ACTIONS_PER_DAY = 3;
+  let actionProgress = 0;
+
+  // Weather State
+  let currentWeather = 'clear';
+  let weatherDuration = 0;
+
+  // ---------- Season / Day State ----------
+  const SEASON_LENGTH = 21;
+  let day = 1;
+  let seasonNumber = 1;
+  let seasonEnded = false;
+  let unlockedPlants = [];
+  let blockedTiles = new Set();
+  let seasonStats = { peakGuilds: 0, coinsEarnedThisSeason: 0, heirloomsHarvested: 0 };
+  let supplyPressure = {};
+
+  // ---------- Plant Data ----------
+  const PLANT_ORDER = ['basil', 'tomato', 'bean', 'marigold', 'chili', 'mint', 'okra', 'spinach'];
+
+  // regrows: true = "cut and come again" — harvesting leaves the plant on the tile to
+  // flush again (real-world: basil/mint regrow from cut foliage; tomato/chili/okra keep
+  // fruiting all season; marigold reblooms when deadheaded, which is what harvesting it
+  // represents here). Bean and spinach are played as a concentrated one-time flush —
+  // bush beans set most of their pods together and tail off, and a full-plant spinach
+  // harvest (rather than picking a few outer leaves) plus its heat-bolting tendency makes
+  // it the fragile, replant-each-time crop — so those two clear the tile like before.
+  const PLANTS = {
+    basil:    { name: 'Basil',    icon: '🌿', cost: 10, evapMult: 1.0,  growthBase: 0.35, marketBase: 25, companions: ['tomato', 'chili'], regrows: true, color: '#487a4f' },
+    tomato:   { name: 'Tomato',   icon: '🍅', cost: 15, evapMult: 1.3,  growthBase: 0.34, marketBase: 40, companions: ['basil'], regrows: true, color: '#c1443a' },
+    bean:     { name: 'Bean',     icon: '🫘', cost: 12, evapMult: 1.0,  growthBase: 0.35, marketBase: 36, nitrogenFixer: true, color: '#bb8b37' },
+    marigold: { name: 'Marigold', icon: '🌼', cost: 20, evapMult: 1.0,  growthBase: 0.30, marketBase: 20, pestShield: true, regrows: true, color: '#d6a94f' },
+    chili:    { name: 'Chili',    icon: '🌶️', cost: 18, evapMult: 0.55, growthBase: 0.30, marketBase: 35, companions: ['basil'], heatLover: true, droughtTolerant: true, heatwaveSpike: true, regrows: true, color: '#b8663f' },
+    mint:     { name: 'Mint',     icon: '🍃', cost: 8,  evapMult: 1.0,  growthBase: 0.55, marketBase: 18, invasive: true, regrows: true, color: '#4fae72' },
+    okra:     { name: 'Okra',     icon: '🫛', cost: 14, evapMult: 0.65, growthBase: 0.20, marketBase: 28, heatLover: true, droughtTolerant: true, regrows: true, color: '#7a8f3a' },
+    spinach:  { name: 'Spinach',  icon: '🥬', cost: 11, evapMult: 1.1,  growthBase: 0.38, marketBase: 28, coldLover: true, wiltsInHeat: true, color: '#3f6b3a' },
+  };
+
+  const TOOL_INFO = {
+    water:    { icon: '💧', name: 'Spray',    desc: 'tap a tile to add moisture.' },
+    basil:    { icon: '🌿', name: 'Basil',    desc: 'pairs with tomato & chili for a Guild bonus. Regrows, but wears out without a bean nearby.' },
+    tomato:   { icon: '🍅', name: 'Tomato',   desc: 'thirsty grower — plant next to basil. Keeps fruiting; wears out without a bean nearby.' },
+    bean:     { icon: '🫘', name: 'Bean',     desc: 'fixes nitrogen, sustains neighbors\' vigor. One-time harvest, but sells for more.' },
+    marigold: { icon: '🌼', name: 'Marigold', desc: 'shields neighbors from pests. Reblooms, but wears out without a bean nearby.' },
+    chili:    { icon: '🌶️', name: 'Chili',    desc: 'heat & drought tolerant, prices spike hot. Wears out without a bean nearby.' },
+    mint:     { icon: '🍃', name: 'Mint',     desc: 'fast grower, chokes non-mint neighbors. Wears out without a bean nearby.' },
+    okra:     { icon: '🫛', name: 'Okra',     desc: 'slow but tough against heat & drought. Wears out without a bean nearby.' },
+    spinach:  { icon: '🥬', name: 'Spinach',  desc: 'loves cool weather, wilts in heatwaves. One-time harvest, but sells for more.' },
+  };
+
+  let savedSeeds = {};
+  PLANT_ORDER.forEach(p => savedSeeds[p] = 0);
+  PLANT_ORDER.forEach(p => supplyPressure[p] = 0);
+
+  let marketPrices = {};
+  PLANT_ORDER.forEach(p => marketPrices[p] = { base: PLANTS[p].marketBase, current: PLANTS[p].marketBase, trend: '➡️' });
+
+  // ---------- Season Progression Helpers ----------
+  // Season 1: the 4 core plants. Season 2: + chili & mint. Season 3+: all 8.
+  function getUnlockedPlantsForSeason(n) {
+    if (n <= 1) return ['basil', 'tomato', 'bean', 'marigold'];
+    if (n === 2) return ['basil', 'tomato', 'bean', 'marigold', 'chili', 'mint'];
+    return PLANT_ORDER.slice();
+  }
+
+  // Coin/guild targets get stiffer each season — same 4x4 grid, higher bar.
+  function getSeasonGoals(n) {
+    return { coins: 120 + (n - 1) * 60, guilds: 3 + Math.floor((n - 1) / 2) };
+  }
+
+  // A few tiles are "rocky" and unplantable each season, count rising with season number.
+  function getBlockedTileCount(n) {
+    if (n <= 1) return 0;
+    if (n <= 3) return 1;
+    if (n <= 5) return 2;
+    return 3;
+  }
+
+  function rollBlockedTiles() {
+    blockedTiles = new Set();
+    const count = getBlockedTileCount(seasonNumber);
+    while (blockedTiles.size < count) {
+      blockedTiles.add(Math.floor(Math.random() * GRID_SIZE));
+    }
+  }
+
+  // Difficulty escalates within a season (day progress) and a little more each season.
+  function getSeasonDifficultyMult() { return 1 + (seasonNumber - 1) * 0.08; }
+  function getDayProgress() { return Math.min(1, (day - 1) / SEASON_LENGTH); }
+  function getEffectiveHeatwaveProb(city) {
+    return Math.min(0.65, city.heatwaveProb * (1 + getDayProgress() * 0.8) * getSeasonDifficultyMult());
+  }
+  function getEffectivePestChance() {
+    return Math.min(0.35, 0.15 * (1 + getDayProgress() * 0.6) * getSeasonDifficultyMult());
+  }
+
+  // City Profiles with explicit climate & weather probabilities
+  const CITIES = {
+    mumbai:  { name: 'Mumbai',  icon: '🏙️', tagline: 'Humid coastal monsoon climate', effectMsg: 'Mumbai: High Monsoon Chance', monsoonProb: 0.35, heatwaveProb: 0.10, evapRate: 4, growthMod: 1.1 },
+    phoenix: { name: 'Phoenix', icon: '🌵', tagline: 'Dry desert heat, harsh sun', effectMsg: 'Phoenix: Extreme Heatwave Risk', monsoonProb: 0.05, heatwaveProb: 0.40, evapRate: 8, growthMod: 0.9 },
+    london:  { name: 'London',  icon: '☁️', tagline: 'Cool, stable, gentle moisture', effectMsg: 'London: Cool & Stable Moisture', monsoonProb: 0.15, heatwaveProb: 0.05, evapRate: 2, growthMod: 1.0 },
+  };
+
+  function evapLabel(rate) { return rate <= 2 ? 'Low' : rate <= 5 ? 'Medium' : 'High'; }
+  function growthLabel(mod) { return mod >= 1.05 ? 'Fast' : mod <= 0.95 ? 'Slow' : 'Normal'; }
+
+  function renderCityCards() {
+    const container = document.getElementById('city-card-list');
+    container.innerHTML = Object.keys(CITIES).map(key => {
+      const c = CITIES[key];
+      return `
+        <button onclick="selectCityAndStart('${key}')" class="seed-packet rounded-2xl overflow-hidden text-left w-full">
+          <div class="seed-packet-band bg-gold-700/30 px-4 py-3 flex items-center gap-3">
+            <span class="text-3xl">${c.icon}</span>
+            <div>
+              <div class="font-display text-lg font-bold text-gold-300">${c.name}</div>
+              <div class="text-[11px] text-stone-400">${c.tagline}</div>
+            </div>
+          </div>
+          <div class="px-4 py-2.5 grid grid-cols-2 gap-1.5 text-[10px] font-mono-stat">
+            <div class="bg-moss-950/60 rounded px-2 py-1 flex justify-between"><span class="text-stone-400 font-body">🌧️ Monsoon</span><span class="text-blue-300">${Math.round(c.monsoonProb * 100)}%</span></div>
+            <div class="bg-moss-950/60 rounded px-2 py-1 flex justify-between"><span class="text-stone-400 font-body">☀️ Heatwave</span><span class="text-rose-300">${Math.round(c.heatwaveProb * 100)}%</span></div>
+            <div class="bg-moss-950/60 rounded px-2 py-1 flex justify-between"><span class="text-stone-400 font-body">💧 Evap</span><span class="text-amber-300">${evapLabel(c.evapRate)}</span></div>
+            <div class="bg-moss-950/60 rounded px-2 py-1 flex justify-between"><span class="text-stone-400 font-body">🌱 Growth</span><span class="text-emerald-300">${growthLabel(c.growthMod)}</span></div>
+          </div>
+          <div class="px-4 pb-3 pt-1 text-right text-[11px] font-display font-bold text-gold-400">Start Growing →</div>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function renderToolGrid() {
+    const container = document.getElementById('tool-grid');
+    const tools = ['water', ...unlockedPlants];
+    container.innerHTML = tools.map(t => {
+      if (t === 'water') {
+        return `
+          <button onclick="selectTool('water')" id="tool-water" class="seed-packet rounded-lg overflow-hidden flex flex-col items-center border-2 border-transparent">
+            <div class="seed-packet-band w-full bg-blue-600/40 py-1 text-center text-sm">💧</div>
+            <div class="py-1 font-bold text-blue-200">Spray</div>
+          </button>
+        `;
+      }
+      const plant = PLANTS[t];
+      return `
+        <button onclick="selectTool('${t}')" id="tool-${t}" class="seed-packet rounded-lg overflow-hidden flex flex-col items-center border-2 border-transparent">
+          <div class="seed-packet-band w-full py-1 text-center text-sm" style="background:${plant.color}66;">${plant.icon}</div>
+          <div class="py-1 font-bold text-stone-200">${plant.name}</div>
+          <div id="stock-${t}" class="text-[8px] text-stone-400 font-mono-stat">${plant.cost}c</div>
+          <div class="text-[7px] ${plant.regrows ? 'text-emerald-400' : 'text-stone-500'} pb-1">${plant.regrows ? '🔁 Regrows' : '🌾 1x Harvest'}</div>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function renderMarketBoard() {
+    const container = document.getElementById('market-board');
+    container.innerHTML = unlockedPlants.map(p => `<div id="mkt-${p}" class="bg-moss-800/80 p-1 rounded border border-moss-700">${PLANTS[p].icon} <span>${marketPrices[p].current}c</span></div>`).join('');
+  }
+
+  let grid = Array(GRID_SIZE).fill(null).map(() => ({ crop: null, stage: 0, moisture: 60, guildType: null, guildEffect: null, isHeirloom: false, hasPests: false, vigor: 1 }));
+
+  function logMsg(msg) { document.getElementById('log').innerText = msg; }
+
+  // ---------- Screen Flow ----------
+  function selectCityAndStart(cityName) {
+    currentCity = cityName;
+    document.getElementById('screen-city-select').classList.add('hidden');
+    document.getElementById('screen-game').classList.remove('hidden');
+    currentScreen = 'game';
+    logMsg(`Relocated balcony to ${CITIES[cityName].name}! Weather odds updated.`);
+    render();
+    if (!tutorialShown) {
+      showTutorial();
+      tutorialShown = true;
+    }
+  }
+
+  function changeCity() {
+    grid = Array(GRID_SIZE).fill(null).map(() => ({ crop: null, stage: 0, moisture: 60, guildType: null, guildEffect: null, isHeirloom: false, hasPests: false, vigor: 1 }));
+    currentWeather = 'clear';
+    weatherDuration = 0;
+    document.getElementById('screen-game').classList.add('hidden');
+    document.getElementById('screen-city-select').classList.remove('hidden');
+    currentScreen = 'city-select';
+  }
+
+  function showTutorial() { document.getElementById('tutorial-modal').classList.remove('hidden'); }
+  function hideTutorial() { document.getElementById('tutorial-modal').classList.add('hidden'); }
+
+  // ---------- Season End / Harvest Festival ----------
+  function endSeason() {
+    seasonEnded = true;
+    render();
+
+    const goals = getSeasonGoals(seasonNumber);
+    const coinsGoalMet = seasonStats.coinsEarnedThisSeason >= goals.coins;
+    const guildsGoalMet = seasonStats.peakGuilds >= goals.guilds;
+
+    let title;
+    if (coinsGoalMet && guildsGoalMet) title = '🏆 Guild Master';
+    else if (guildsGoalMet) title = '✨ Companion Whisperer';
+    else if (coinsGoalMet) title = '🪙 Market Star';
+    else title = '🌱 Balcony Beginner';
+
+    const nextPlants = getUnlockedPlantsForSeason(seasonNumber + 1);
+    const newlyUnlocked = nextPlants.filter(p => !unlockedPlants.includes(p));
+
+    document.getElementById('recap-season-num').innerText = seasonNumber;
+    document.getElementById('recap-title').innerText = title;
+    document.getElementById('recap-coins').innerText = `🪙 ${seasonStats.coinsEarnedThisSeason} / ${goals.coins} goal`;
+    document.getElementById('recap-guilds').innerText = `✨ ${seasonStats.peakGuilds} / ${goals.guilds} goal (peak)`;
+    document.getElementById('recap-heirlooms').innerText = `👑 ${seasonStats.heirloomsHarvested} heirlooms harvested`;
+
+    const unlockEl = document.getElementById('recap-unlocks');
+    if (newlyUnlocked.length > 0) {
+      unlockEl.classList.remove('hidden');
+      unlockEl.innerText = `🔓 New for next season: ${newlyUnlocked.map(p => PLANTS[p].name).join(', ')}!`;
+    } else {
+      unlockEl.classList.add('hidden');
+    }
+
+    logMsg(`🎉 Season ${seasonNumber} complete! Check your Harvest Festival recap.`);
+    document.getElementById('recap-modal').classList.remove('hidden');
+  }
+
+  function startNextSeason() {
+    seasonNumber++;
+    day = 1;
+    seasonEnded = false;
+    actionProgress = 0;
+    seasonStats = { peakGuilds: 0, coinsEarnedThisSeason: 0, heirloomsHarvested: 0 };
+    PLANT_ORDER.forEach(p => supplyPressure[p] = 0);
+    unlockedPlants = getUnlockedPlantsForSeason(seasonNumber);
+    rollBlockedTiles();
+    grid = Array(GRID_SIZE).fill(null).map(() => ({ crop: null, stage: 0, moisture: 60, guildType: null, guildEffect: null, isHeirloom: false, hasPests: false, vigor: 1 }));
+    currentWeather = 'clear';
+    weatherDuration = 0;
+
+    document.getElementById('recap-modal').classList.add('hidden');
+    renderToolGrid();
+    renderMarketBoard();
+    selectTool('water');
+    updateActionProgressUI();
+    logMsg(`🌱 Season ${seasonNumber} begins! Fresh plot, tougher weather ahead.`);
+    render();
+  }
+
+  // ---------- Weather ----------
+  function triggerWeatherEvent() {
+    if (weatherDuration > 0) {
+      weatherDuration--;
+      if (weatherDuration === 0) {
+        currentWeather = 'clear';
+        logMsg('🌤️ Weather cleared back to seasonal baseline.');
+      }
+      return;
+    }
+
+    const city = CITIES[currentCity];
+    const roll = Math.random();
+
+    if (roll < getEffectiveHeatwaveProb(city)) {
+      currentWeather = 'heatwave';
+      weatherDuration = 3;
+      logMsg(`☀️ HEATWAVE in ${city.name}! Evaporation surges, spinach wilts, heat-lovers cash in!`);
+    } else if (roll > (1 - city.monsoonProb)) {
+      currentWeather = 'monsoon';
+      weatherDuration = 2;
+      grid.forEach(tile => tile.moisture = 100);
+      logMsg(`🌧️ RAINSTORM in ${city.name}! Heavy downpour fully waters all balcony plants!`);
+    }
+  }
+
+  function updateWeatherUI() {
+    const banner = document.getElementById('weather-banner');
+    const status = document.getElementById('weather-status');
+    const effect = document.getElementById('weather-effect');
+
+    if (currentWeather === 'heatwave') {
+      banner.className = 'w-full bg-rose-950/80 border border-rose-500 text-rose-200 rounded-xl px-3 py-1.5 flex justify-between items-center text-xs font-semibold animate-pulse';
+      status.innerText = '☀️ HEATWAVE ACTIVE';
+      effect.innerText = '3x Evaporation | Spinach Wilting | Demand Spike';
+    } else if (currentWeather === 'monsoon') {
+      banner.className = 'w-full bg-blue-950/80 border border-blue-500 text-blue-200 rounded-xl px-3 py-1.5 flex justify-between items-center text-xs font-semibold';
+      status.innerText = '🌧️ HEAVY DOWNPOUR';
+      effect.innerText = 'Soil at 100% | Low Market Demand';
+    } else {
+      banner.className = 'w-full bg-gold-700/20 border border-gold-500/40 text-gold-200 rounded-xl px-3 py-1.5 flex justify-between items-center text-xs font-semibold';
+      status.innerText = '🌤️ Weather: Clear Skies';
+      effect.innerText = 'Normal Evaporation';
+    }
+  }
+
+  // ---------- Market ----------
+  function updateMarketBoard() {
+    marketShiftCountdown--;
+    if (marketShiftCountdown <= 0) {
+      marketShiftCountdown = 4;
+
+      PLANT_ORDER.forEach(crop => {
+        let multiplier = 1.0;
+        let trendIcon = '➡️';
+        const plant = PLANTS[crop];
+
+        if (currentWeather === 'heatwave' && (crop === 'basil' || crop === 'tomato' || plant.heatwaveSpike)) {
+          multiplier = 1.5;
+          trendIcon = '📈';
+        } else if (currentWeather === 'monsoon') {
+          multiplier = 0.7;
+          trendIcon = '📉';
+        } else {
+          const roll = Math.random();
+          if (roll > 0.65) { multiplier = 1.3; trendIcon = '📈'; }
+          else if (roll < 0.35) { multiplier = 0.7; trendIcon = '📉'; }
+        }
+
+        // Oversupply: repeatedly dumping the same crop temporarily depresses its own price.
+        const oversupplyMult = 1 - supplyPressure[crop];
+        marketPrices[crop].current = Math.max(
+          Math.round(marketPrices[crop].base * 0.4),
+          Math.round(marketPrices[crop].base * multiplier * oversupplyMult)
+        );
+        marketPrices[crop].trend = trendIcon;
+      });
+    }
+
+    // Oversupply pressure decays slowly each tick whether or not prices just shifted.
+    PLANT_ORDER.forEach(p => { supplyPressure[p] = Math.max(0, supplyPressure[p] * 0.93); });
+
+    PLANT_ORDER.forEach(crop => {
+      const item = marketPrices[crop];
+      const color = item.trend === '📈' ? 'text-emerald-400' : item.trend === '📉' ? 'text-rose-400' : 'text-stone-300';
+      const el = document.getElementById(`mkt-${crop}`);
+      if (el) el.innerHTML = `${PLANTS[crop].icon} <span class="${color} font-bold">${item.current}c ${item.trend}</span>`;
+    });
+    document.getElementById('market-timer').innerText = `Shift in: ${marketShiftCountdown} day${marketShiftCountdown === 1 ? '' : 's'}`;
+  }
+
+  function setHarvestMode(mode) {
+    harvestMode = mode;
+    document.getElementById('mode-cash').className = mode === 'cash'
+      ? 'px-2.5 py-1 rounded font-bold bg-gold-600 text-moss-950'
+      : 'px-2.5 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700';
+    document.getElementById('mode-seeds').className = mode === 'seeds'
+      ? 'px-2.5 py-1 rounded font-bold bg-emerald-600 text-white'
+      : 'px-2.5 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700';
+    logMsg(`Harvest mode set to: ${mode === 'cash' ? '🪙 Selling for Cash' : '🧬 Saving Heirloom Seeds'}`);
+  }
+
+  // ---------- Guild Logic ----------
+  function getNeighbors(index) {
+    const row = Math.floor(index / GRID_COLS), col = index % GRID_COLS;
+    const neighbors = [];
+    if (row > 0) neighbors.push(index - GRID_COLS);
+    if (row < GRID_ROWS - 1) neighbors.push(index + GRID_COLS);
+    if (col > 0) neighbors.push(index - 1);
+    if (col < GRID_COLS - 1) neighbors.push(index + 1);
+    return neighbors;
+  }
+
+  // Priority per tile: companion match > nitrogen fix (neighbor bean) > pest shield (neighbor marigold) > mint-choke penalty
+  function getGuildInfo(index) {
+    const tile = grid[index];
+    if (!tile.crop) return null;
+    const plant = PLANTS[tile.crop];
+    const neighborCrops = getNeighbors(index).map(i => grid[i].crop).filter(Boolean);
+
+    if (plant.companions) {
+      for (const companion of plant.companions) {
+        if (neighborCrops.includes(companion)) {
+          const pair = [tile.crop, companion].sort().join('-');
+          if (pair === 'basil-tomato') return { effect: 'guild', label: 'Aroma Guild', bonus: 0.3 };
+          if (pair === 'basil-chili') return { effect: 'guild', label: 'Spice Guild', bonus: 0.3 };
+        }
+      }
+    }
+    if (tile.crop !== 'bean' && neighborCrops.includes('bean')) {
+      return { effect: 'nitrogen', label: 'Nitrogen Fix', evapCut: 0.5 };
+    }
+    if (tile.crop !== 'marigold' && neighborCrops.includes('marigold')) {
+      return { effect: 'shield', label: 'Pest Shield' };
+    }
+    if (tile.crop !== 'mint' && neighborCrops.includes('mint')) {
+      return { effect: 'choke', label: 'Mint-Choked', penalty: 0.25 };
+    }
+    return null;
+  }
+
+  function calculateGuilds() {
+    let activeGuilds = 0;
+    grid.forEach((tile, index) => {
+      const info = getGuildInfo(index);
+      tile.guildType = info ? info.label : null;
+      tile.guildEffect = info ? info.effect : null;
+      if (info && info.effect !== 'choke') activeGuilds++;
+    });
+    seasonStats.peakGuilds = Math.max(seasonStats.peakGuilds, activeGuilds);
+    document.getElementById('guild-status').innerText = `✨ Guilds: ${activeGuilds}`;
+  }
+
+  function updateStockUI() {
+    PLANT_ORDER.forEach(crop => {
+      const el = document.getElementById(`stock-${crop}`);
+      if (!el) return;
+      if (savedSeeds[crop] > 0) {
+        el.innerText = `🧬 ${savedSeeds[crop]} Saved`;
+        el.className = 'text-[8px] text-gold-300 font-bold pb-1 font-mono-stat';
+      } else {
+        el.innerText = `${PLANTS[crop].cost}c`;
+        el.className = 'text-[8px] text-stone-400 pb-1 font-mono-stat';
+      }
+    });
+  }
+
+  function updateThreatUI() {
+    const pestCount = grid.filter(t => t.hasPests).length;
+    const el = document.getElementById('threat-level');
+    let label, colorClass;
+    if (pestCount === 0) { label = 'Low'; colorClass = 'text-emerald-400'; }
+    else if (pestCount <= 2) { label = 'Moderate'; colorClass = 'text-amber-400'; }
+    else { label = 'High'; colorClass = 'text-rose-400'; }
+    el.innerText = `🐛 ${label}`;
+    el.className = `font-bold font-mono-stat ${colorClass}`;
+  }
+
+  function triggerPestOutbreak() {
+    const plantedIndices = grid.map((tile, i) => tile.crop ? i : null).filter(i => i !== null);
+    if (plantedIndices.length === 0) return;
+
+    const targetIndex = plantedIndices[Math.floor(Math.random() * plantedIndices.length)];
+    const targetTile = grid[targetIndex];
+
+    if (targetTile.guildEffect === 'shield' || targetTile.crop === 'marigold') return;
+    if (targetTile.guildEffect && Math.random() < 0.7) return;
+
+    targetTile.hasPests = true;
+    logMsg(`🚨 PEST OUTBREAK! Aphids infested an unshielded ${PLANTS[targetTile.crop].name}!`);
+  }
+
+  // ---------- Selection Indicator ----------
+  function updateSelectionIndicator() {
+    const info = TOOL_INFO[selectedTool];
+    document.getElementById('sel-icon').innerText = info.icon;
+    document.getElementById('sel-name').innerText = info.name;
+    document.getElementById('sel-desc').innerText = `— ${info.desc}`;
+  }
+
+  // ---------- Gift Seeds UI ----------
+  function updateGiftSeedsBanner() {
+    const el = document.getElementById('gift-seeds-banner');
+    if (!el) return;
+    const locked = PLANT_ORDER.filter(p => !unlockedPlants.includes(p) && savedSeeds[p] > 0);
+    if (locked.length === 0) {
+      el.classList.add('hidden');
+      return;
+    }
+    el.classList.remove('hidden');
+    el.innerText = `🎁 Saved for later: ${locked.map(p => `${PLANTS[p].icon} ${PLANTS[p].name} x${savedSeeds[p]}`).join('   ')}`;
+  }
+
+  // ---------- Season Goals UI ----------
+  function updateSeasonGoalsUI() {
+    const el = document.getElementById('season-goals');
+    if (!el) return;
+    const goals = getSeasonGoals(seasonNumber);
+    const coinsDone = seasonStats.coinsEarnedThisSeason >= goals.coins;
+    const guildsDone = seasonStats.peakGuilds >= goals.guilds;
+    el.innerHTML = `
+      <span class="${coinsDone ? 'text-emerald-400' : 'text-stone-400'} font-bold">${coinsDone ? '✅' : '🎯'} 🪙 ${seasonStats.coinsEarnedThisSeason}/${goals.coins}</span>
+      <span class="${guildsDone ? 'text-emerald-400' : 'text-stone-400'} font-bold">${guildsDone ? '✅' : '🎯'} ✨ ${seasonStats.peakGuilds}/${goals.guilds} (peak)</span>
+    `;
+  }
+
+  // ---------- Render ----------
+  function render() {
+    calculateGuilds();
+    updateStockUI();
+    updateWeatherUI();
+    updateThreatUI();
+    updateSelectionIndicator();
+    updateSeasonGoalsUI();
+    updateGiftSeedsBanner();
+
+    const gridEl = document.getElementById('grid');
+    gridEl.innerHTML = '';
+
+    grid.forEach((tile, index) => {
+      const cell = document.createElement('div');
+
+      if (blockedTiles.has(index)) {
+        cell.className = 'grid-cell rounded-lg border border-moss-600 tile-rocky flex flex-col items-center justify-center relative';
+        cell.onclick = () => handleTileClick(index);
+        cell.innerHTML = `<span class="text-stone-300 text-[9px] font-bold uppercase tracking-wide">Rocky</span><span class="text-[7px] text-stone-500 mt-0.5">no planting</span>`;
+        gridEl.appendChild(cell);
+        return;
+      }
+
+      cell.className = `grid-cell rounded-lg border flex flex-col items-center justify-center cursor-pointer transition-all relative ${
+        tile.hasPests ? 'border-rose-500 bg-rose-950/80 ring-2 ring-rose-500 animate-pulse' :
+        tile.isHeirloom ? 'ring-2 ring-emerald-400 border-emerald-400 bg-moss-700' :
+        tile.guildEffect === 'choke' ? 'border-rose-800 bg-moss-700' :
+        tile.guildType ? 'border-gold-400 bg-moss-700' :
+        tile.moisture < 20 ? 'bg-clay-700/60 border-clay-700' : 'bg-moss-700 border-moss-600'
+      }`;
+      cell.onclick = () => handleTileClick(index);
+
+      let icon = '🟫';
+      if (tile.hasPests) icon = '🐛';
+      else if (tile.crop) icon = tile.stage >= 3 ? PLANTS[tile.crop].icon : '🌱';
+
+      cell.innerHTML = `
+        ${tile.hasPests ? '<span class="absolute top-0.5 left-0.5 text-[7px] bg-rose-600 text-white px-0.5 rounded font-bold">PEST</span>' : ''}
+        ${tile.isHeirloom && !tile.hasPests ? '<span class="absolute top-0.5 left-0.5 text-[7px] bg-emerald-500/40 text-emerald-200 px-0.5 rounded font-bold">👑</span>' : ''}
+        ${tile.guildType && !tile.hasPests ? `<span class="absolute top-0.5 right-0.5 text-[6.5px] ${tile.guildEffect === 'choke' ? 'bg-rose-600/50 text-rose-200' : 'bg-gold-500/40 text-gold-200'} px-0.5 rounded font-bold">${tile.guildType}</span>` : ''}
+        <span class="text-xl">${icon}</span>
+        <span class="text-[9px] text-stone-400 mt-0.5 font-mono-stat">💧${Math.round(tile.moisture)}%${tile.crop && (tile.vigor ?? 1) < 0.7 ? ' 🍂' : ''}</span>
+      `;
+      gridEl.appendChild(cell);
+    });
+
+    document.getElementById('coins').innerText = `🪙 ${coins}`;
+    document.getElementById('energy').innerText = `⚡ ${energy}`;
+    document.getElementById('city-effect').innerText = CITIES[currentCity].effectMsg;
+    document.getElementById('day-counter').innerText = `Day ${day}/${SEASON_LENGTH} · Season ${seasonNumber}`;
+  }
+
+  function handleTileClick(index) {
+    if (blockedTiles.has(index)) {
+      logMsg('🪨 Rocky ground — nothing can grow here this season.');
+      return;
+    }
+    let tile = grid[index];
+    let timePassingAction = false;
+
+    if (tile.hasPests) {
+      tile.hasPests = false;
+      tile.moisture = Math.min(100, tile.moisture + 30);
+      logMsg('Cleared pests using organic spray!');
+      timePassingAction = true;
+    } else if (selectedTool === 'water') {
+      tile.moisture = Math.min(100, tile.moisture + 45);
+      logMsg('Watered tile.');
+      timePassingAction = true;
+    } else if (unlockedPlants.includes(selectedTool) && !tile.crop) {
+      const plant = PLANTS[selectedTool];
+
+      if (savedSeeds[selectedTool] > 0) {
+        savedSeeds[selectedTool]--;
+        tile.crop = selectedTool;
+        tile.stage = 1;
+        tile.isHeirloom = true;
+        tile.vigor = 1;
+        logMsg(`Planted 👑 Heirloom ${plant.name} from saved seeds!`);
+        timePassingAction = true;
+      } else if (coins >= plant.cost) {
+        coins -= plant.cost;
+        tile.crop = selectedTool;
+        tile.stage = 1;
+        tile.isHeirloom = false;
+        tile.vigor = 1;
+        logMsg(`Bought and planted standard ${plant.name}.`);
+        timePassingAction = true;
+      } else {
+        logMsg('Not enough coins or saved seeds!');
+      }
+    }
+    render();
+    if (timePassingAction) registerPlotAction();
+  }
+
+  function selectTool(tool) {
+    selectedTool = tool;
+    ['water', ...PLANT_ORDER].forEach(t => {
+      const btn = document.getElementById(`tool-${t}`);
+      if (!btn) return;
+      if (t === tool) {
+        btn.classList.add('border-gold-400');
+        btn.classList.remove('border-transparent');
+      } else {
+        btn.classList.add('border-transparent');
+        btn.classList.remove('border-gold-400');
+      }
+    });
+    updateSelectionIndicator();
+  }
+
+  // ---------- Action → Day Progress ----------
+  // Watering, planting, and clearing pests each nudge time forward; every
+  // ACTIONS_PER_DAY of them, a full day (weather/growth/market) passes.
+  function registerPlotAction() {
+    actionProgress++;
+    if (actionProgress >= ACTIONS_PER_DAY) {
+      actionProgress = 0;
+      advanceDay();
+    } else {
+      updateActionProgressUI();
+    }
+  }
+
+  function updateActionProgressUI() {
+    const el = document.getElementById('action-progress');
+    if (!el) return;
+    if (seasonEnded) { el.innerText = ''; return; }
+    const remaining = ACTIONS_PER_DAY - actionProgress;
+    el.innerText = `🕐 ${remaining} action${remaining === 1 ? '' : 's'} until next day (or ⏩ Fast-Forward)`;
+  }
+
+  // ---------- Simulation Tick (one day passing) ----------
+  function advanceDay() {
+    if (currentScreen !== 'game' || seasonEnded) return;
+
+    day++;
+    if (day > SEASON_LENGTH) {
+      endSeason();
+      return;
+    }
+
+    triggerWeatherEvent();
+    if (Math.random() < getEffectivePestChance()) triggerPestOutbreak();
+
+    const city = CITIES[currentCity];
+
+    grid.forEach((tile) => {
+      if (!tile.crop) return;
+      const plant = PLANTS[tile.crop];
+      const info = getGuildInfo(grid.indexOf(tile));
+
+      let evapRate = city.evapRate * plant.evapMult;
+      if (currentWeather === 'heatwave') evapRate *= (plant.droughtTolerant ? 1.5 : 3.0);
+      if (info && info.effect === 'nitrogen') evapRate *= info.evapCut;
+      if (tile.hasPests) evapRate *= 2.0;
+
+      if (currentWeather !== 'monsoon') {
+        tile.moisture = Math.max(0, tile.moisture - evapRate);
+      }
+
+      let wilted = false;
+      if (plant.wiltsInHeat && currentWeather === 'heatwave' && Math.random() < 0.5 && tile.stage > 1) {
+        tile.stage -= 1;
+        wilted = true;
+      }
+
+      if (tile.hasPests) {
+        if (Math.random() < 0.4 && tile.stage > 1) tile.stage -= 1;
+      } else if (!wilted && tile.moisture > 15) {
+        let growthChance = plant.growthBase * city.growthMod;
+        if (plant.heatLover && currentWeather === 'heatwave') growthChance += 0.15;
+        if (info && info.effect === 'guild') growthChance += info.bonus;
+        if (info && info.effect === 'choke') growthChance -= info.penalty;
+        if (tile.isHeirloom) growthChance += 0.15;
+        growthChance *= (tile.vigor ?? 1); // depleted soil regrows more slowly
+        growthChance = Math.min(0.95, Math.max(0.02, growthChance));
+
+        if (tile.stage > 0 && tile.stage < 3 && Math.random() < growthChance) {
+          tile.stage += 1;
+        }
+      }
+    });
+
+    updateMarketBoard();
+    updateActionProgressUI();
+    render();
+  }
+
+  function forageWildSeeds() {
+    if (energy <= 0) { logMsg('Out of energy!'); return; }
+    energy -= 1;
+
+    // Mostly you find seeds for what you've already unlocked. Occasionally, if
+    // anything is still locked, you stumble on a rare surprise gift instead.
+    const lockedPlants = PLANT_ORDER.filter(p => !unlockedPlants.includes(p));
+    const isSurprise = lockedPlants.length > 0 && Math.random() < 0.2;
+    const pool = isSurprise ? lockedPlants : unlockedPlants;
+    const foundCrop = pool[Math.floor(Math.random() * pool.length)];
+    savedSeeds[foundCrop] += 1;
+
+    if (isSurprise) {
+      logMsg(`🎁 SURPRISE GIFT! You found a rare seed you haven't unlocked yet: ${PLANTS[foundCrop].icon} ${PLANTS[foundCrop].name}! Saved for when it unlocks.`);
+    } else {
+      logMsg(`Foraged neighborhood: Found 1 Wild ${PLANTS[foundCrop].name} seed! (🧬 Saved)`);
+    }
+    render();
+  }
+
+  function fastForward() {
+    if (energy > 0) {
+      energy -= 1;
+      actionProgress = 0;
+      advanceDay();
+      logMsg('⏩ Skipped ahead a full day.');
+    } else {
+      logMsg('Out of energy!');
+    }
+  }
+
+  function harvestAll() {
+    let totalCash = 0, seedsSavedCount = 0;
+
+    grid.forEach((tile, index) => {
+      if (tile.crop && tile.stage >= 3 && !tile.hasPests) {
+        if (tile.isHeirloom) seasonStats.heirloomsHarvested++;
+        if (harvestMode === 'cash') {
+          let baseMarketPrice = marketPrices[tile.crop].current;
+          if (tile.guildType && tile.guildEffect !== 'choke') baseMarketPrice += 15;
+          if (tile.isHeirloom) baseMarketPrice = Math.round(baseMarketPrice * 1.5);
+          totalCash += baseMarketPrice;
+          // Dumping the same crop repeatedly floods the market and depresses its own price.
+          supplyPressure[tile.crop] = Math.min(0.5, supplyPressure[tile.crop] + 0.07);
+        } else {
+          let seedYield = tile.isHeirloom ? 2 : 1;
+          savedSeeds[tile.crop] += seedYield;
+          seedsSavedCount += seedYield;
+        }
+        if (PLANTS[tile.crop].regrows) {
+          // Cut-and-come-again: the plant stays in, flushing again from an established
+          // root/stem rather than starting over as a fresh seedling. But repeatedly
+          // harvesting the same tile depletes the soil — a neighboring bean (nitrogen
+          // fix), checked live at harvest time, sustains or restores vigor instead.
+          const info = getGuildInfo(index);
+          if (info && info.effect === 'nitrogen') {
+            tile.vigor = Math.min(1, (tile.vigor ?? 1) + 0.1);
+          } else {
+            tile.vigor = Math.max(0.4, (tile.vigor ?? 1) - 0.15);
+          }
+          tile.stage = 2;
+        } else {
+          tile.crop = null;
+          tile.stage = 0;
+          tile.isHeirloom = false;
+          tile.vigor = 1;
+        }
+      }
+    });
+
+    if (harvestMode === 'cash') {
+      coins += totalCash;
+      seasonStats.coinsEarnedThisSeason += totalCash;
+      logMsg(totalCash > 0 ? `Harvested crops for 🪙 ${totalCash} coins at active market prices!` : 'No healthy, mature crops ready.');
+    } else {
+      logMsg(seedsSavedCount > 0 ? `Processed harvest into 🧬 ${seedsSavedCount} Heirloom Seeds!` : 'No healthy, mature crops ready.');
+    }
+    render();
+  }
+
+  // ---------- Init ----------
+  unlockedPlants = getUnlockedPlantsForSeason(seasonNumber);
+  rollBlockedTiles();
+  renderCityCards();
+  renderToolGrid();
+  renderMarketBoard();
+  selectTool('water');
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
