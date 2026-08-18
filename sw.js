@@ -1,15 +1,12 @@
-// Minimal offline-cache service worker for Pocket Permaculture.
-// Caches the app shell on install so the game works offline after first load,
-// and so PWABuilder's Android packager recognizes this as a real installable PWA.
 const CACHE_NAME = 'pocket-permaculture-v1';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-192-maskable.png',
-  './icons/icon-512-maskable.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-192-maskable.png',
+  './icon-512-maskable.png',
 ];
 
 self.addEventListener('install', (event) => {
