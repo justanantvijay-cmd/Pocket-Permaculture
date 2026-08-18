@@ -419,6 +419,9 @@
           ⏩ Skip to Next Day (1 ⚡)
         </button>
       </div>
+      <button onclick="waitAWhile()" class="w-full bg-moss-900/60 text-stone-400 border border-moss-700 py-1.5 rounded-lg text-[10px] font-bold hover:bg-moss-900">
+        ⏳ Nothing to do? Wait a while (free)
+      </button>
       <div id="log" class="text-[10px] text-stone-400 bg-moss-950/60 p-2 rounded border border-moss-700 h-10 overflow-y-auto">
         Pick a city above to start your balcony plot!
       </div>
@@ -501,8 +504,13 @@
   }
 
   // Coin/guild targets get stiffer each season — same 4x4 grid, higher bar.
+  // NOTE: season 1's target was originally 120, which a single good harvest
+  // cycle blows past several times over (a full 4x4 of season-1 crops sells
+  // for ~450-500 coins per cycle). Retuned so hitting the goal takes real
+  // play across the season rather than being trivial by day 5-7. Treat this
+  // as a first-pass number pending real playtest data, not a final balance.
   function getSeasonGoals(n) {
-    return { coins: 120 + (n - 1) * 60, guilds: 3 + Math.floor((n - 1) / 2) };
+    return { coins: 600 + (n - 1) * 220, guilds: 3 + Math.floor((n - 1) / 2) };
   }
 
   // A few tiles are "rocky" and unplantable each season, count rising with season number.
@@ -1129,6 +1137,15 @@
     } else {
       logMsg('Out of energy!');
     }
+  }
+
+  // Always-free way to nudge time forward — no energy cost, no need to
+  // "trick" the game by re-watering an already-saturated tile. Exists so a
+  // full grid + empty energy bar never leaves the player with no honest move.
+  function waitAWhile() {
+    logMsg('⏳ You wait a while, tending little things around the plot.');
+    render();
+    registerPlotAction();
   }
 
   function harvestAll() {
