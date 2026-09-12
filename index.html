@@ -11,6 +11,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- Village multiplayer layer (Sept 2026) — Supabase JS client, pinned version.
+     Loaded from a real webpage context (file:// or GitHub Pages), not an Artifact
+     sandbox, so a CDN script tag is fine here. All village code below degrades
+     gracefully to solo play if this fails to load or the network is unreachable —
+     per the hard design law, no mechanic may ever require another player. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
   /* ---- Base / resets ---- */
   * { box-sizing: border-box; }
@@ -58,7 +64,54 @@
     display: block; width: 100%; box-sizing: border-box; padding: 5px; border-radius: 10px;
     background: #08130a; border: 2px solid #14240f;
     box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: filter 0.6s ease; /* the vitality tint should drift, not snap, each render */
   }
+  /* Wildlife sighting toast (Sept 2026) — floats over the top-right corner of the
+     grid so it reads as "something just happened on the land," not a modal
+     interrupting play. Auto-hides itself; see showSightingToast(). */
+  .land-sighting-toast {
+    position: absolute; top: 6px; right: 6px; max-width: 78%;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(12,26,15,0.94); border: 1px solid rgba(250,204,21,0.5);
+    border-radius: 8px; padding: 5px 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    z-index: 5; opacity: 0; pointer-events: none;
+  }
+  .land-sighting-toast-icon { font-size: 20px; line-height: 1; }
+  .land-sighting-toast-text { font-size: 9px; color: #e7e5e4; line-height: 1.3; }
+  .land-sighting-toast-anim { animation: land-toast-inout 3.2s ease forwards; }
+  @keyframes land-toast-inout {
+    0%   { opacity: 0; transform: translateY(-6px) scale(0.9); }
+    10%  { opacity: 1; transform: translateY(0) scale(1); }
+    85%  { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  }
+  /* Cross-section (Sept 2026) — a side-view stack of the selected tile's 6 layers,
+     canopy at top down to root underground, so the real vertical structure of a
+     food-forest tile is something you can actually see, not just read as a list of
+     rows. Band heights are fixed and ordered, not driven by content, so the stack
+     always reads top-to-bottom the same way regardless of what's planted. */
+  .land-cross-section {
+    background: #0c1a0f; border: 1px solid rgba(250,204,21,0.25); border-radius: 8px;
+    padding: 6px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .land-cross-section-title { font-size: 10px; font-weight: 700; color: #fbbf24; margin-bottom: 3px; }
+  .land-cross-band {
+    display: flex; align-items: center; gap: 6px; border-radius: 4px; padding: 4px 6px;
+    min-height: 22px;
+  }
+  .land-cross-band-icon { font-size: 8px; width: 12px; text-align: center; opacity: 0.7; }
+  .land-cross-band-plant { font-size: 13px; }
+  .land-cross-band-label { font-size: 8px; color: #a8a29e; flex: 1; }
+  .land-cross-band-empty { font-size: 8px; color: #6b6660; font-style: italic; }
+  /* Above-ground bands lighten toward canopy (sky-ward); root sits in a visibly
+     different soil tone so "underground" reads as a distinct zone, not just another
+     row in the same list. */
+  .land-cross-band-canopy      { background: rgba(94,178,220,0.10); }
+  .land-cross-band-understory  { background: rgba(94,178,178,0.09); }
+  .land-cross-band-shrub       { background: rgba(94,178,94,0.09); }
+  .land-cross-band-groundcover { background: rgba(140,178,94,0.09); }
+  .land-cross-band-climber     { background: rgba(178,148,94,0.08); }
+  .land-cross-band-root        { background: rgba(107,79,44,0.28); border-top: 1px dashed rgba(220,192,136,0.3); }
   .land-grid-parcel {
     position: relative;
     display: grid; gap: 0;
@@ -116,15 +169,16 @@
     position: absolute; border-radius: 50%; transform: translate(-50%, -50%);
     pointer-events: none; filter: blur(1px);
   }
-  /* One small identity icon per tile (Aug 2026) — the dominant occupied layer's
-     plant, not one glyph per layer, so "what's growing here" reads at a glance
-     without reintroducing the per-tile icon clutter the elevation redesign removed.
-     Sits on top of its own growth blob (landGrowthOverlayHtml). */
+  /* One identity icon per planted layer (updated Sep 12 2026 — AV wants the full
+     stack visible on the tile itself, not just the dominant layer). Each rides on
+     its own growth blob (landGrowthOverlayHtml), sized/faded by that layer's
+     maturity and weight; the dominant layer's icon stacks on top and reads largest. */
   .land-growth-icon {
     position: absolute; transform: translate(-50%, -50%);
-    pointer-events: none; line-height: 1;
+    pointer-events: none; line-height: 1; z-index: 1;
     text-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 0 3px rgba(0,0,0,0.35);
   }
+  .land-growth-icon-dominant { z-index: 2; }
   /* Sighting journal (Aug 2026) — a field-notebook card per creature's first
      sighting, reverse-chronological. Tier 3 gets a visually larger/highlighted card
      per the content draft's "the day the hornbill came, not a bigger checkbox" spec —
@@ -458,6 +512,11 @@
            and maturity, per updateLandVitalityUI() in the script. -->
       <div id="land-vitality" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 mb-2 text-[10px] leading-relaxed"></div>
 
+      <!-- Village multiplayer (Sept 2026) — village layer only, per AV's chosen
+           scope: shared seed library + a village vitality pool. Close-neighbor and
+           "the year closes" stay stubbed for a future session (see renderVillagePanel). -->
+      <div id="land-village-panel" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 mb-2 text-[10px] leading-relaxed"></div>
+
       <div class="flex gap-1 mb-2">
         <button id="landview-elevation" onclick="setLandViewMode('elevation')" class="px-2 py-1 rounded font-bold bg-gold-600 text-moss-950 text-[10px]">⛰️ Elevation</button>
         <button id="landview-daylight" onclick="setLandViewMode('daylight')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">☀️ Daylight</button>
@@ -478,9 +537,21 @@
         <div class="land-frame">
           <div id="land-grid" class="land-grid-parcel"></div>
         </div>
+        <!-- Wildlife sighting toast (Sept 2026) — the map-level payoff for a first
+             sighting, so it's felt in the moment rather than only ever discovered
+             later in the Field Notebook. See queueSightingToast()/showSightingToast(). -->
+        <div id="land-sighting-toast" class="land-sighting-toast hidden"></div>
       </div>
 
       <div id="land-legend" class="mb-2"></div>
+
+      <!-- Cross-section (Sept 2026) — a side-view stack of all 6 layers for the
+           selected tile, canopy at top down to root underground, labeled with each
+           layer's live fit. The grid itself now also shows one icon per planted
+           layer (AV reversed the earlier single-icon call on Sept 12 2026); this
+           panel is still the clearest ordered read of the full stack. See
+           renderLandCrossSection(). -->
+      <div id="land-cross-section" class="mb-2"></div>
 
       <div id="land-tile-info" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 text-[11px] leading-relaxed" style="min-height: 3.5rem;">
         <span class="text-stone-500">Tap a tile to observe it.</span>
@@ -495,9 +566,11 @@
       <div id="land-sightings" class="flex flex-col gap-1.5"></div>
     </div>
 
-    <!-- The land screen's own simple time control — separate from the balcony
-         game's day/season clock, since there's no tending action here yet to
-         advance time implicitly. See advanceLandDay() in the script. -->
+    <!-- The land screen's own time control — separate from the balcony game's
+         day/season clock. Time also now advances on its own as you take real
+         actions (see registerLandAction()/LAND_ACTIONS_PER_DAY), so this button is
+         a manual fast-forward rather than the only way a day ever passes. -->
+    <div id="land-action-progress" class="text-center text-[10px] text-stone-500 mb-1"></div>
     <button onclick="advanceLandDay()" class="mb-2 bg-gold-600/20 text-gold-300 border border-gold-500/40 py-2 rounded-lg text-xs font-bold hover:bg-gold-600/30">🌞 Let a day pass</button>
 
     <div class="flex gap-2 mb-4">
@@ -1331,6 +1404,17 @@
       <div class="land-vitality-bar-track"><div class="land-vitality-bar-fill" style="width:${pct}%"></div></div>
       <div class="text-stone-400 mt-1">${tier.label} — ${v.plantedTileCount}/${v.tileCount} tiles planted. ${blurb}</div>
     `;
+    // The whole plot subtly comes alive as the real vitality score rises — a barren
+    // plot reads dusty/desaturated, a thriving one reads vivid/bright. Tied to the
+    // actual computeZoneVitality() number, not a fake day-of-time cycle, so the one
+    // stat that already summarizes "how well you're doing" is also the one thing
+    // that visibly changes the whole grid, not just a text readout above it.
+    const frame = document.querySelector('.land-frame');
+    if (frame) {
+      const sat = (0.55 + v.score * 0.75).toFixed(2);
+      const bright = (0.85 + v.score * 0.22).toFixed(2);
+      frame.style.filter = `saturate(${sat}) brightness(${bright})`;
+    }
   }
 
   // ---- Phase 1 wildlife (Aug 25 2026, zone-vitality wiring round) ----
@@ -1542,6 +1626,15 @@
   let landTrust = 0;
   let landSeedBank = {}; // { [plantKey]: highest generation banked }
 
+  // Action-driven day advance (Sept 12 2026, AV's call — time shouldn't wait on a
+  // manual button alone). Mirrors the balcony game's own registerPlotAction/
+  // ACTIONS_PER_DAY pattern: every real land action (planting, placing an element,
+  // harvesting, giving away, clearing a pest) nudges a counter, and every
+  // LAND_ACTIONS_PER_DAY of them a day passes automatically. The manual "Let a day
+  // pass" button still works on its own and resets this counter too.
+  const LAND_ACTIONS_PER_DAY = 3;
+  let landActionProgress = 0;
+
   // First-pass values, like every other magnitude in this project (flagged, not
   // derived from playtesting): a real relative ordering — canopy/slow-growing
   // species represent the most time and space invested, so they pay out the most —
@@ -1551,6 +1644,18 @@
   function landPlantValue(key) {
     const plant = LAND_PLANTS[key];
     return Math.round((LAND_LAYER_VALUE[plant.layer] || 8) * (LAND_SPEED_MULT[plant.growthSpeed] || 1));
+  }
+
+  // What planting actually costs (Sept 12 2026 — AV flagged that coins weren't
+  // being spent at all; planting was free). A seedling costs a fraction of its own
+  // eventual harvest value — real investment, but the harvest is still meant to pay
+  // it back with a profit once mature, so the loop (spend to plant, earn back more
+  // by harvesting) actually functions. Free from your own seed bank once you've
+  // harvested that species here before — the honest lineage default already used for
+  // generation inheritance; buying a fresh market seedling is what actually costs.
+  function landPlantSeedCost(key) {
+    if (landSeedBank[key]) return 0;
+    return Math.max(2, Math.round(landPlantValue(key) * 0.35));
   }
 
   // Harvest: sells a mature planting for coins and banks a seed generation for next
@@ -1570,6 +1675,7 @@
     landCoins += coinsEarned;
     landSeedBank[entry.key] = Math.min(6, generation + 1);
     removeLandPlant(index, layer);
+    registerLandAction();
     return coinsEarned;
   }
 
@@ -1587,7 +1693,206 @@
     const trustEarned = Math.round(landPlantValue(entry.key) * 0.4);
     landTrust += trustEarned;
     removeLandPlant(index, layer);
+    registerLandAction();
     return trustEarned;
+  }
+
+  // ---- Village multiplayer (Sept 2026) — village layer only ----
+  // Per the design law from the memory doc: "no mechanic may ever require another
+  // player to progress." Everything below is additive on top of an already-complete
+  // solo game, and fails soft at every step — a missing CDN script, a network error,
+  // anonymous auth not enabled on the project, all land in villageState:'unavailable'
+  // and the panel just says so, never a broken screen. Scope is deliberately narrow
+  // (shared seed library + village vitality pool + snapshot registry) per AV's own
+  // choice — close-neighbor pairing and "the year closes" are designed in the schema
+  // (homesteads.trust, growth_rings) but intentionally left unwired this round.
+  const VILLAGE_SUPABASE_URL = 'https://xljyzlgvnydsxjzftkzy.supabase.co';
+  const VILLAGE_SUPABASE_KEY = 'sb_publishable_cWXRGNAWMZdkfiO731vzmw_X0ORl1i4'; // publishable by design, safe client-side
+  let villageClient = null;
+  let villageHomestead = null; // the row claim_homestead() returned for this player
+  let villageHealth = null;    // one row from the village_health aggregate view
+  let villageSeedStock = [];   // unclaimed seed_library rows for this village
+  let villageState = 'idle';   // idle | connecting | connected | unavailable
+  let villageError = '';
+
+  async function connectToVillage() {
+    if (villageState === 'connecting' || villageState === 'connected') return;
+    villageState = 'connecting';
+    renderVillagePanel();
+    try {
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        throw new Error('Supabase client library did not load');
+      }
+      if (!villageClient) villageClient = window.supabase.createClient(VILLAGE_SUPABASE_URL, VILLAGE_SUPABASE_KEY);
+      const { data: sessionData, error: authErr } = await villageClient.auth.getSession();
+      if (!sessionData || !sessionData.session) {
+        const { error: signInErr } = await villageClient.auth.signInAnonymously();
+        if (signInErr) throw signInErr;
+      } else if (authErr) {
+        throw authErr;
+      }
+      const { data: homestead, error: claimErr } = await villageClient.rpc('claim_homestead', { p_seed: landSeed || 1 });
+      if (claimErr) throw claimErr;
+      villageHomestead = Array.isArray(homestead) ? homestead[0] : homestead;
+      if (!villageHomestead || !villageHomestead.id) throw new Error('no homestead returned');
+      villageState = 'connected';
+      await Promise.all([refreshVillageHealth(), refreshVillageSeedStock()]);
+    } catch (e) {
+      villageState = 'unavailable';
+      villageError = (e && e.message) || String(e);
+      console.warn('Village connection unavailable, continuing solo:', villageError);
+    }
+    renderVillagePanel();
+  }
+
+  async function refreshVillageHealth() {
+    if (!villageClient || !villageHomestead) return;
+    try {
+      const { data, error } = await villageClient
+        .from('village_health').select('*').eq('village_id', villageHomestead.village_id).maybeSingle();
+      if (error) throw error;
+      villageHealth = data;
+    } catch (e) {
+      console.warn('Could not refresh village health:', (e && e.message) || e);
+    }
+  }
+
+  async function refreshVillageSeedStock() {
+    if (!villageClient || !villageHomestead) return;
+    try {
+      const { data, error } = await villageClient
+        .from('seed_library').select('*')
+        .eq('village_id', villageHomestead.village_id).is('claimed_by', null)
+        .order('adaptation', { ascending: false }).limit(20);
+      if (error) throw error;
+      villageSeedStock = data || [];
+    } catch (e) {
+      console.warn('Could not refresh seed library:', (e && e.message) || e);
+    }
+  }
+
+  // Publishes a bounded, aggregate snapshot of this plot — never raw tile data — so
+  // the village pool and world map have something real to reflect. Uses the plain
+  // RLS-guarded update path (homesteads_update_own), not a custom RPC, since a
+  // player is always allowed to update their own row.
+  async function publishVillageSnapshot() {
+    if (villageState !== 'connected' || !villageClient || !villageHomestead) return;
+    const vitality = computeZoneVitality();
+    const layerCounts = {};
+    const elementCounts = {};
+    landPlot.tiles.forEach(t => {
+      LAND_LAYERS.forEach(l => {
+        const e = t.plants[l];
+        if (e) layerCounts[l] = (layerCounts[l] || 0) + 1;
+      });
+      if (t.element) elementCounts[t.element] = (elementCounts[t.element] || 0) + 1;
+    });
+    try {
+      const { error } = await villageClient.from('homesteads').update({
+        vitality: Math.min(1, Math.max(0, vitality.score)),
+        vitality_avg: Math.min(1, Math.max(0, vitality.score)),
+        land_day: Math.min(100000, landDay),
+        layer_counts: layerCounts,
+        element_counts: elementCounts,
+        last_seen_at: new Date().toISOString(),
+      }).eq('id', villageHomestead.id);
+      if (error) throw error;
+      await refreshVillageHealth();
+      renderVillagePanel();
+    } catch (e) {
+      console.warn('Could not publish village snapshot:', (e && e.message) || e);
+    }
+  }
+
+  // Donate: gives a banked lineage away to the village library — the same real
+  // "seed sovereignty and trust" tradeoff as giveLandPlantAway, at village scale
+  // this time. adaptation is a bounded 0-1 read-out of the same generation number
+  // already capped at 6 locally, not a new invented stat.
+  async function donateVillageSeed(plantKey) {
+    if (villageState !== 'connected' || !villageClient || !villageHomestead) return;
+    const generation = landSeedBank[plantKey] || 0;
+    if (generation < 1) return;
+    try {
+      const { error } = await villageClient.from('seed_library').insert({
+        village_id: villageHomestead.village_id,
+        plant_key: plantKey,
+        generation,
+        adaptation: Math.min(1, generation / 6),
+        donated_by: villageHomestead.id,
+      });
+      if (error) throw error;
+      await refreshVillageSeedStock();
+      renderVillagePanel();
+    } catch (e) {
+      console.warn('Could not donate seed:', (e && e.message) || e);
+    }
+  }
+
+  // Claim: draws one packet from the village's shared stock and folds its lineage
+  // into the local seed bank — a real donated generation, not a fabricated one, so
+  // a new player can genuinely benefit from someone else's work on their own plot.
+  async function claimVillageSeed(plantKey) {
+    if (villageState !== 'connected' || !villageClient || !villageHomestead) return;
+    try {
+      const { data, error } = await villageClient.rpc('claim_village_seed', { p_plant_key: plantKey });
+      if (error) throw error;
+      const packet = Array.isArray(data) ? data[0] : data;
+      if (packet && packet.generation) {
+        landSeedBank[plantKey] = Math.max(landSeedBank[plantKey] || 0, Math.min(6, packet.generation));
+        saveGame();
+      }
+      await refreshVillageSeedStock();
+      renderVillagePanel();
+    } catch (e) {
+      console.warn('Could not claim seed:', (e && e.message) || e);
+    }
+  }
+
+  function renderVillagePanel() {
+    const el = document.getElementById('land-village-panel');
+    if (!el) return;
+    if (villageState === 'idle') {
+      el.innerHTML = `<div class="flex justify-between items-center">
+        <span class="text-gold-300 font-medium">🏘️ Village</span>
+        <button class="land-economy-btn" onclick="connectToVillage()">Connect</button>
+      </div>
+      <div class="text-stone-500 mt-1">Optional — a shared seed library and village vitality pool with other players. The solo game is already complete without it.</div>`;
+      return;
+    }
+    if (villageState === 'connecting') {
+      el.innerHTML = `<span class="text-gold-300 font-medium">🏘️ Village</span><div class="text-stone-500 mt-1">Connecting…</div>`;
+      return;
+    }
+    if (villageState === 'unavailable') {
+      el.innerHTML = `<div class="flex justify-between items-center">
+        <span class="text-gold-300 font-medium">🏘️ Village</span>
+        <button class="land-economy-btn" onclick="connectToVillage()">Retry</button>
+      </div>
+      <div class="text-stone-500 mt-1">Unavailable right now — playing solo. (${villageError.replace(/</g, '&lt;')})</div>`;
+      return;
+    }
+    // connected
+    const health = villageHealth
+      ? `${villageHealth.active_homesteads}/${villageHealth.total_homesteads} active · pool vitality ${(villageHealth.pool_vitality * 100).toFixed(0)}% · ${villageHealth.healthy_zones} healthy zones`
+      : 'reading village health…';
+    const bankedEntries = Object.entries(landSeedBank).filter(([, gen]) => gen >= 1);
+    const donateHtml = bankedEntries.length
+      ? bankedEntries.map(([key, gen]) => `<button class="land-economy-btn land-economy-btn-trust" onclick="donateVillageSeed('${key}')" title="Donate gen ${gen} ${LAND_PLANTS[key].name} to the village">🎁 ${LAND_PLANTS[key].icon} gen ${gen}</button>`).join('')
+      : '<span class="text-stone-500">Harvest something a few times to earn a lineage worth donating.</span>';
+    const stockHtml = villageSeedStock.length
+      ? villageSeedStock.map(s => `<button class="land-economy-btn" onclick="claimVillageSeed('${s.plant_key}')" title="Claim this seed">🌱 ${(LAND_PLANTS[s.plant_key] && LAND_PLANTS[s.plant_key].icon) || ''} gen ${s.generation}</button>`).join('')
+      : '<span class="text-stone-500">The shared library is empty right now — be the first to donate.</span>';
+    el.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="text-gold-300 font-medium">🏘️ Village</span>
+        <button class="land-economy-btn" onclick="publishVillageSnapshot()" title="Share your current vitality with the village pool">📤 Publish</button>
+      </div>
+      <div class="text-stone-500 mt-1">${health}</div>
+      <div class="mt-2" style="font-weight:700;color:#e7e5e4;">Seed library — claim</div>
+      <div class="land-plant-row-economy" style="flex-wrap:wrap;">${stockHtml}</div>
+      <div class="mt-2" style="font-weight:700;color:#e7e5e4;">Donate your own lineage</div>
+      <div class="land-plant-row-economy" style="flex-wrap:wrap;">${donateHtml}</div>
+    `;
   }
 
   function checkLandSightings() {
@@ -1597,7 +1902,36 @@
       if (vitality.score < c.minZoneVitality) return;
       if (!c.check(landPlot)) return;
       landSightings[c.key] = { firstSeenDay: landDay };
+      // Queue a felt, map-level moment for this first sighting — see
+      // showSightingToast(), called from renderLandGrid right after this. Queuing
+      // rather than showing immediately keeps this function a pure state check,
+      // and means a render that finds several new sightings in one pass (e.g. after
+      // a reload restores a save) doesn't try to stack several toasts at once —
+      // only the most recent queued one is ever shown.
+      landPendingSightingToast = c;
     });
+  }
+
+  // The wildlife journal has always been real ("Phase 1... gets a one-line journal
+  // note"), but it only ever paid off if the player thought to go read it. This is
+  // the same event surfaced where it actually happens — over the plot, the moment
+  // it's earned — without adding any new gameplay effect (still cosmetic-only, per
+  // the Phase 1 spec at the top of LAND_CREATURES).
+  let landPendingSightingToast = null;
+  function showSightingToast() {
+    if (!landPendingSightingToast) return;
+    const c = landPendingSightingToast;
+    landPendingSightingToast = null;
+    const el = document.getElementById('land-sighting-toast');
+    if (!el) return;
+    el.innerHTML = `<span class="land-sighting-toast-icon">${c.icon}</span>
+      <span class="land-sighting-toast-text"><b>${c.name}</b><br>${c.flavor}</span>`;
+    el.classList.remove('hidden');
+    el.classList.remove('land-sighting-toast-anim');
+    void el.offsetWidth; // restart the CSS animation if a toast is already mid-flight
+    el.classList.add('land-sighting-toast-anim');
+    clearTimeout(showSightingToast._timer);
+    showSightingToast._timer = setTimeout(() => el.classList.add('hidden'), 3200);
   }
 
   function renderLandSightingsJournal() {
@@ -1904,8 +2238,11 @@
     updateLandLegend();
     updateLandAspectBanner();
     updateLandVitalityUI();
+    updateLandActionProgressUI();
     checkLandSightings();
     renderLandSightingsJournal();
+    showSightingToast();
+    renderVillagePanel();
   }
 
   // Terra Nil-style growth visual (replaces the old flat "planted" dot, Aug 25 2026):
@@ -1919,11 +2256,10 @@
   const LAND_LAYER_VISUAL_WEIGHT = { canopy: 34, understory: 28, shrub: 22, groundcover: 16, climber: 18, root: 12 };
 
   // The single most visually-dominant occupied layer on a tile (by the same weight
-  // table the blobs use) — the one plant whose identity actually gets an icon.
-  // Deliberately not "one icon per layer": AV flagged the earlier per-tile terrain
-  // icons as clutter across a 64-tile grid, and 6 icons stacked on one tile would
-  // reintroduce exactly that, just for plants instead of terrain. A tile's full
-  // multi-layer contents are still fully readable in the tile-info stack panel below.
+  // table the blobs use) — used to size/emphasize icons (the dominant layer's icon
+  // renders largest/brightest) even though, per AV's Sep 12 2026 call, every planted
+  // layer now gets its own icon on the tile (see landGrowthOverlayHtml below) rather
+  // than only the dominant one.
   function landDominantLayer(tile) {
     let best = null, bestWeight = -1;
     LAND_LAYERS.forEach(layer => {
@@ -1949,15 +2285,18 @@
       const alpha = (0.16 + factor * 0.52).toFixed(2);
       const alphaEdge = (alpha * 0.55).toFixed(2);
       let html = `<span class="land-growth-blob" style="width:${size}px; height:${size}px; left:${leftPct}%; top:${topPct}%; background: radial-gradient(circle, rgba(94,178,94,${alpha}) 0%, rgba(52,120,58,${alphaEdge}) 65%, rgba(52,120,58,0) 100%);"></span>`;
-      // The one identity icon this tile gets, riding on its own blob so it reads as
-      // "part of" the greenery rather than a separate marker. Floors at 55% opacity
-      // and ~11px even for a same-day seedling — the point is you can always tell
-      // what's growing here, only the growth blob itself is meant to start faint.
-      if (layer === dominant) {
-        const iconSize = (11 + factor * 5).toFixed(1);
-        const iconOpacity = (0.55 + factor * 0.45).toFixed(2);
-        html += `<span class="land-growth-icon" style="left:${leftPct}%; top:${topPct}%; font-size:${iconSize}px; opacity:${iconOpacity};">${plant.icon}</span>`;
-      }
+      // Every planted layer gets its own identity icon, riding on its own blob so it
+      // reads as "part of" the greenery rather than a separate marker (AV's Sep 12
+      // 2026 call — previously only the dominant layer got an icon to avoid clutter;
+      // now every layer shows so the full stack is scannable at the grid level). The
+      // dominant layer's icon still renders largest/brightest; the rest scale down
+      // by their own layer weight so a canopy tree doesn't get visually buried under
+      // five smaller-layer glyphs. Floors keep even a same-day seedling icon legible.
+      const isDominant = layer === dominant;
+      const weightScale = LAND_LAYER_VISUAL_WEIGHT[layer] / LAND_LAYER_VISUAL_WEIGHT.canopy;
+      const iconSize = ((isDominant ? 11 : 8) + factor * (isDominant ? 5 : 3.5) * weightScale).toFixed(1);
+      const iconOpacity = ((isDominant ? 0.55 : 0.42) + factor * (isDominant ? 0.45 : 0.4)).toFixed(2);
+      html += `<span class="land-growth-icon${isDominant ? ' land-growth-icon-dominant' : ''}" style="left:${leftPct}%; top:${topPct}%; font-size:${iconSize}px; opacity:${iconOpacity};">${plant.icon}</span>`;
       // A tile-corner pest badge — scannable across the whole 64-tile grid at a
       // glance, same purpose as the balcony game's pulsing rose border on an
       // infested cell, just sized for a much smaller tile here.
@@ -1990,6 +2329,39 @@
     establishing: { icon: '🌿', label: 'Establishing' },
     mature: { icon: '🌳', label: 'Mature' },
   };
+
+  // Cross-section: one band per layer, always in the same canopy-to-root order
+  // regardless of what's occupied, so the shape of the stack itself teaches the
+  // layer concept even on a bare tile. Reuses computePlantFit's own stage/fit
+  // data rather than recomputing anything, so it can never drift from the tile-
+  // info panel's numbers just below it.
+  function renderLandCrossSection(index) {
+    const el = document.getElementById('land-cross-section');
+    if (!el) return;
+    const tile = landPlot.tiles[index];
+    const bands = LAND_LAYERS.map(layer => {
+      const info = LAND_LAYER_INFO[layer];
+      const entry = tile.plants[layer];
+      if (!entry) {
+        return `<div class="land-cross-band land-cross-band-${layer}">
+          <span class="land-cross-band-icon">${info.icon}</span>
+          <span class="land-cross-band-empty">${info.label} — empty</span>
+        </div>`;
+      }
+      const plant = LAND_PLANTS[entry.key];
+      const fit = computePlantFit(tile, layer);
+      const factor = LAND_GROWTH_FACTOR[fit.stage];
+      const plantSize = (12 + factor * 6).toFixed(1);
+      const plantOpacity = (0.5 + factor * 0.5).toFixed(2);
+      return `<div class="land-cross-band land-cross-band-${layer}">
+        <span class="land-cross-band-icon">${info.icon}</span>
+        <span class="land-cross-band-plant" style="font-size:${plantSize}px; opacity:${plantOpacity};">${plant.icon}</span>
+        <span class="land-cross-band-label">${plant.name} · ${fit.icon} ${fit.label}</span>
+      </div>`;
+    }).join('');
+    el.className = 'land-cross-section';
+    el.innerHTML = `<div class="land-cross-section-title">🪓 Cross-section</div>${bands}`;
+  }
 
   function renderLandTileInfo(index) {
     const tile = landPlot.tiles[index];
@@ -2067,6 +2439,7 @@
       ${describeLandTile(tile)}
       <div class="land-plant-stack">${stackHtml}${elementHtml}</div>
     `;
+    renderLandCrossSection(index);
   }
 
   function showLandTileInfo(index) {
@@ -2086,13 +2459,16 @@
       const previewEntry = { key, plantedOn: landDay };
       const previewTile = { ...tile, plants: { ...tile.plants, [layer]: previewEntry } };
       const fit = computePlantFit(previewTile, layer);
-      return `<button class="land-picker-option" onclick="placeLandPlant(${index}, '${layer}', '${key}')">
+      const cost = landPlantSeedCost(key);
+      const affordable = cost <= landCoins;
+      const costLabel = cost === 0 ? 'own seed · free' : `🪙${cost}`;
+      return `<button class="land-picker-option" ${affordable ? `onclick="placeLandPlant(${index}, '${layer}', '${key}')"` : 'disabled style="opacity:0.4;cursor:not-allowed;"'}>
         <span class="land-picker-icon">${plant.icon}</span>
         <span class="land-picker-name-wrap">
-          <span class="land-picker-name">${plant.name}</span>
+          <span class="land-picker-name">${plant.name} <span class="text-stone-500 font-normal">(${costLabel})</span></span>
           <span class="land-picker-tags">${landPlantMetaHtml(plant, fit)}</span>
         </span>
-        <span class="land-picker-fit" title="${fit.label}">${fit.icon}</span>
+        <span class="land-picker-fit" title="${affordable ? fit.label : 'Not enough coins'}">${affordable ? fit.icon : '🚫'}</span>
       </button>`;
     }).join('');
     const layerLabel = LAND_LAYER_INFO[layer].label.toLowerCase();
@@ -2107,6 +2483,13 @@
   }
 
   function placeLandPlant(index, layer, key) {
+    // A fresh market seedling actually costs coins now (Sept 12 2026 — planting was
+    // free, which is why spending never showed up); free when replanting your own
+    // banked lineage, per landPlantSeedCost. Blocked outright if you can't afford it
+    // rather than letting the balance go negative.
+    const cost = landPlantSeedCost(key);
+    if (cost > landCoins) return;
+    landCoins -= cost;
     // Automatically plants from this plot's own seed bank when one exists for this
     // species — the honest default per the seed-sovereignty design (a player who's
     // harvested this species here before is continuing that lineage, not starting a
@@ -2118,6 +2501,7 @@
     recomputeCanopyShade();
     renderLandTileInfo(index);
     renderLandGrid();
+    registerLandAction();
     saveGame();
   }
 
@@ -2137,14 +2521,17 @@
   function openLandElementPicker(index) {
     const tile = landPlot.tiles[index];
     const rows = Object.entries(LAND_ELEMENTS).map(([key, el]) => {
-      const ok = el.eligible(tile);
+      const eligible = el.eligible(tile);
+      const affordable = el.cost <= landCoins;
+      const ok = eligible && affordable;
+      const title = !eligible ? 'Not eligible on this tile' : !affordable ? 'Not enough coins' : 'Can place here';
       return `<button class="land-picker-option" ${ok ? `onclick="placeLandElement(${index}, '${key}')"` : 'disabled style="opacity:0.4;cursor:not-allowed;"'}>
         <span class="land-picker-icon">${el.icon}</span>
         <span class="land-picker-name-wrap">
           <span class="land-picker-name">${el.name} <span class="text-stone-500 font-normal">(🪙${el.cost})</span></span>
           <span class="land-picker-tags"><span class="land-plant-tag">${el.short}</span></span>
         </span>
-        <span class="land-picker-fit" title="${ok ? 'Can place here' : 'Not eligible on this tile'}">${ok ? '✅' : '🚫'}</span>
+        <span class="land-picker-fit" title="${title}">${ok ? '✅' : '🚫'}</span>
       </button>`;
     }).join('');
     document.getElementById('land-plant-picker-title').innerText = 'Choose a design element';
@@ -2153,6 +2540,9 @@
   }
 
   function placeLandElement(index, key) {
+    const el = LAND_ELEMENTS[key];
+    if (el.cost > landCoins) return;
+    landCoins -= el.cost;
     landElements[index] = key;
     applyLandElements();
     recomputeWaterFlow(landPlot.tiles);
@@ -2160,6 +2550,7 @@
     closeLandPlantPicker();
     renderLandTileInfo(index);
     renderLandGrid();
+    registerLandAction();
     saveGame();
   }
 
@@ -2175,10 +2566,12 @@
 
   // The land screen's own time control — advances landDay, recomputes everything
   // that depends on growth stage (canopy shade, pioneer windbreak eligibility), and
-  // re-renders. Deliberately separate from the balcony game's `day`/`advanceDay()` —
-  // the land screen has no tending actions to drive it implicitly yet.
+  // re-renders. Deliberately separate from the balcony game's `day`/`advanceDay()`.
+  // Callable manually (the "Let a day pass" button) or automatically once enough
+  // real actions have accumulated — see registerLandAction() below.
   function advanceLandDay() {
     landDay += 1;
+    landActionProgress = 0;
     recomputeCanopyShade();
     // Water flow is now genuinely perturbed by placed elements (swale/check dam/
     // terracing/pond/banana circle — see LAND_ELEMENTS), so this day-tick call is a
@@ -2187,7 +2580,28 @@
     triggerLandPestOutbreak();
     renderLandGrid();
     if (selectedLandTile !== null) renderLandTileInfo(selectedLandTile);
+    updateLandActionProgressUI();
     saveGame();
+  }
+
+  // Action → day progress, mirroring the balcony game's registerPlotAction. Every
+  // real land action (planting, placing an element, harvesting, giving away,
+  // clearing a pest) counts; every LAND_ACTIONS_PER_DAY of them a day passes on its
+  // own, so time keeps moving even if a player never touches "Let a day pass".
+  function registerLandAction() {
+    landActionProgress++;
+    if (landActionProgress >= LAND_ACTIONS_PER_DAY) {
+      advanceLandDay(); // resets landActionProgress to 0 itself
+    } else {
+      updateLandActionProgressUI();
+    }
+  }
+
+  function updateLandActionProgressUI() {
+    const el = document.getElementById('land-action-progress');
+    if (!el) return;
+    const remaining = LAND_ACTIONS_PER_DAY - landActionProgress;
+    el.innerText = `🕐 ${remaining} action${remaining === 1 ? '' : 's'} until next day (or 🌞 Let a day pass)`;
   }
 
   // ================= LAND PESTS =================
@@ -2258,6 +2672,7 @@
     landPestEverResolved = true;
     renderLandTileInfo(index);
     renderLandGrid();
+    registerLandAction();
     saveGame();
   }
 
@@ -2283,8 +2698,14 @@
     if (!landPlot || landPlot.seed !== landSeed) regenerateLandPlot(landSeed);
     selectedLandTile = null;
     document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
+    clearLandCrossSection();
     renderLandGrid();
     saveGame();
+  }
+
+  function clearLandCrossSection() {
+    const el = document.getElementById('land-cross-section');
+    if (el) { el.className = ''; el.innerHTML = ''; }
   }
 
   function backToTitleFromLand() {
@@ -2302,10 +2723,13 @@
     landPestEverResolved = false; // and hasn't weathered/recovered from a pest event yet either
     landLastPestDay = null;
     landSeedBank = {}; // a landrace is adapted to a SPECIFIC plot — new ground, lineage starts over
+    landActionProgress = 0; // fresh ground, fresh action-to-day count too
     regenerateLandPlot(landSeed);
     selectedLandTile = null;
     document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
+    clearLandCrossSection();
     renderLandGrid();
+    updateLandActionProgressUI();
     saveGame();
   }
   // ================= END THE LAND (early preview) =================
@@ -3189,7 +3613,7 @@
       hasHarvestedOnce, hintShownSellSave, hintShownGuildEffect, unlockToastShown,
       landSeed, landPlantings, landElements, landDay, landSightings,
       landPestEverResolved, landLastPestDay,
-      landCoins, landTrust, landSeedBank,
+      landCoins, landTrust, landSeedBank, landActionProgress,
     };
   }
 
@@ -3233,6 +3657,7 @@
     landCoins = s.landCoins != null ? s.landCoins : 50; // older saves predate the economy — fine to start at the default
     landTrust = s.landTrust || 0;
     landSeedBank = s.landSeedBank || {};
+    landActionProgress = s.landActionProgress || 0; // older saves predate this — fine to start at 0
     normalizeLandPlantings(); // migrates any pre-growth-clock save (plain string plant keys)
     return true;
   }
