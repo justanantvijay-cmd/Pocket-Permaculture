@@ -8,9 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Pocket Permaculture</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -45,6 +42,195 @@
     background-image: repeating-linear-gradient(45deg, #35342f 0, #35342f 3px, transparent 3px, transparent 9px),
                        repeating-linear-gradient(-45deg, #2a2926 0, #2a2926 3px, transparent 3px, transparent 9px);
   }
+
+  /* ---- The Land: "parcel not blocks" retro grid (Aug 2026 redesign) ----
+     Zero gap, zero per-tile border — tiles touch so same-terrain ground melts
+     together. ONE shared dither texture behind the whole grid (not per-tile) so the
+     pattern never breaks at a seam. A "cliff lip" edge is drawn only where elevation
+     actually steps between two real neighbors, on the raised tile's side — everywhere
+     else there's no line at all. One frame around the whole parcel, not a border
+     around every cell. See land-tile-color(), computeCliffEdges() in the script. */
+  .land-frame {
+    /* block + explicit width, not inline-block shrink-to-fit — with per-tile icons
+       gone, the grid has no content left to size its 1fr columns from, so a
+       shrink-to-fit frame collapses to its own padding. A definite width lets the
+       grid fill it and the columns size from that instead of from content. */
+    display: block; width: 100%; box-sizing: border-box; padding: 5px; border-radius: 10px;
+    background: #08130a; border: 2px solid #14240f;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  }
+  .land-grid-parcel {
+    position: relative;
+    display: grid; gap: 0;
+    background-color: #12210f;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 4px, rgba(0,0,0,0.08) 4px 8px);
+    border-radius: 6px; overflow: hidden;
+  }
+  .land-tile {
+    position: relative; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; cursor: pointer;
+  }
+  .cliff-edge { position: absolute; pointer-events: none; }
+  .cliff-top    { top: 0; left: 0; right: 0; height: var(--w); background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
+  .cliff-bottom { bottom: 0; left: 0; right: 0; height: var(--w); background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
+  .cliff-left   { top: 0; bottom: 0; left: 0; width: var(--w); background: linear-gradient(to right, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
+  .cliff-right  { top: 0; bottom: 0; right: 0; width: var(--w); background: linear-gradient(to left, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
+
+  /* ---- The Land: legend/key (Aug 2026 redesign) ----
+     Per-tile icons were dropped — they clutter a 64-tile grid, and two of them
+     (a wave for low ground, a snow peak for the ridge) overstated the scale of what
+     is meant to be a modest homestead plot, not an ocean-and-mountain landscape. Color
+     now carries the difference; this legend explains the color. Elevation is an
+     ordinal tier, so it gets one shared gradient bar with tier numbers baked in and
+     "lower/higher" endcaps rather than a literal place-name per tier. The three
+     binary modes (daylight/wind/water) get a two-row swatch key instead. */
+  .land-legend-gradient {
+    display: flex; border-radius: 4px; overflow: hidden; height: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .land-legend-seg {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: rgba(0,0,0,0.55);
+  }
+  .land-legend-endcaps {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: #78716c; margin-top: 2px;
+  }
+  .land-legend-rows { display: flex; flex-direction: column; gap: 2px; }
+  .land-legend-row {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 9px; color: #a8a29e;
+  }
+  .land-legend-swatch {
+    display: inline-block; width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  /* ---- The Land: planting (Aug 2026, "aspirational ecosystem" pass) ----
+     A tile can hold one plant per food-forest layer (canopy → root) instead of one
+     plant total — the actual structural break from the balcony game's single-plant
+     grid cell. See LAND_LAYERS / renderLandTileInfo() / openLandPlantPicker() in the
+     script. */
+  .land-growth-blob {
+    position: absolute; border-radius: 50%; transform: translate(-50%, -50%);
+    pointer-events: none; filter: blur(1px);
+  }
+  /* One small identity icon per tile (Aug 2026) — the dominant occupied layer's
+     plant, not one glyph per layer, so "what's growing here" reads at a glance
+     without reintroducing the per-tile icon clutter the elevation redesign removed.
+     Sits on top of its own growth blob (landGrowthOverlayHtml). */
+  .land-growth-icon {
+    position: absolute; transform: translate(-50%, -50%);
+    pointer-events: none; line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 0 3px rgba(0,0,0,0.35);
+  }
+  /* Sighting journal (Aug 2026) — a field-notebook card per creature's first
+     sighting, reverse-chronological. Tier 3 gets a visually larger/highlighted card
+     per the content draft's "the day the hornbill came, not a bigger checkbox" spec —
+     size and a gold ring, not a separate rarity-grinding UI. */
+  .land-sighting-entry {
+    background: rgba(0,0,0,0.22); border-radius: 6px; padding: 6px 8px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .land-sighting-entry.land-sighting-rare {
+    background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.35);
+    padding: 9px 10px;
+  }
+  .land-sighting-icon { font-size: 16px; line-height: 1.3; }
+  .land-sighting-rare .land-sighting-icon { font-size: 22px; }
+  .land-sighting-body { flex: 1; min-width: 0; }
+  .land-sighting-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .land-sighting-name { font-weight: 700; color: #fbbf24; font-size: 11px; }
+  .land-sighting-day { font-size: 9px; color: #78716c; white-space: nowrap; }
+  .land-sighting-flavor { font-size: 10px; color: #a8a29e; margin-top: 2px; line-height: 1.4; }
+  .land-vitality-bar-track {
+    background: rgba(255,255,255,0.08); border-radius: 4px; height: 6px;
+    overflow: hidden; margin-top: 4px;
+  }
+  .land-vitality-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(to right, #6b4f2c, #5eb25e);
+  }
+  .land-plant-stack {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .land-plant-row {
+    display: flex; align-items: flex-start; gap: 6px;
+    background: rgba(0,0,0,0.22); border-radius: 6px; padding: 5px 7px;
+  }
+  .land-plant-row-icon { font-size: 15px; line-height: 1.3; }
+  .land-plant-row-main { flex: 1; min-width: 0; }
+  .land-plant-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .land-plant-row-name { font-size: 10px; font-weight: 700; color: #e7e5e4; }
+  .land-plant-row-fit { font-size: 9px; color: #a8a29e; white-space: nowrap; }
+  .land-plant-row-stage { font-size: 8px; color: #93c5fd; margin-top: 1px; }
+  .land-plant-row-roles { font-size: 8px; color: #6ee7b7; margin-top: 1px; }
+  .land-plant-row-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+  .land-plant-tag {
+    font-size: 8px; color: #a8a29e; background: rgba(255,255,255,0.06);
+    border-radius: 4px; padding: 1px 4px; white-space: nowrap;
+  }
+  .land-plant-tag-pioneer { color: #93c5fd; background: rgba(147,197,253,0.12); }
+  .land-plant-tag-sheltered { color: #6ee7b7; background: rgba(110,231,183,0.12); }
+  .land-plant-tag-exposed { color: #fca5a5; background: rgba(252,165,165,0.12); }
+  .land-plant-row-remove {
+    background: none; border: none; color: #78716c; font-size: 11px; line-height: 1;
+    cursor: pointer; padding: 2px;
+  }
+  .land-plant-row-remove:hover { color: #e7e5e4; }
+  .land-plant-row-pested { border: 1px solid rgba(244,63,94,0.4); background: rgba(244,63,94,0.08); }
+  .land-pest-badge {
+    position: absolute; top: 1px; right: 1px; font-size: 8px; line-height: 1;
+    filter: drop-shadow(0 0 1px rgba(0,0,0,0.9));
+  }
+  .land-plant-row-economy { display: flex; gap: 5px; margin-top: 3px; }
+  .land-economy-btn {
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+    background: rgba(250,204,21,0.14); color: #facc15; border: 1px solid rgba(250,204,21,0.35);
+    cursor: pointer;
+  }
+  .land-economy-btn-trust { background: rgba(94,178,178,0.14); color: #7dd3fc; border-color: rgba(94,178,178,0.35); }
+  .land-economy-header {
+    display: flex; gap: 10px; align-items: center; font-size: 10px; font-weight: 700;
+  }
+  .land-economy-header span.coins { color: #facc15; }
+  .land-economy-header span.trust { color: #7dd3fc; }
+  .land-plant-add {
+    display: flex; align-items: center; gap: 5px; width: 100%; text-align: left;
+    font-size: 10px; font-weight: 600; color: #6ee7b7;
+    background: rgba(52,211,153,0.08); border: 1px dashed rgba(52,211,153,0.35);
+    border-radius: 6px; padding: 5px 7px; cursor: pointer;
+  }
+  .land-plant-add:hover { background: rgba(52,211,153,0.16); }
+  .land-element-row {
+    display: flex; align-items: flex-start; gap: 6px;
+    background: rgba(217,119,6,0.10); border: 1px solid rgba(217,119,6,0.25);
+    border-radius: 6px; padding: 5px 7px; margin-top: 2px;
+  }
+
+  #land-plant-picker {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 30;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .land-picker-sheet {
+    width: 100%; max-width: 28rem; background: #14240f; border-top: 2px solid #34d399;
+    border-radius: 14px 14px 0 0; padding: 12px 12px 16px; max-height: 72vh; overflow-y: auto;
+  }
+  .land-picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .land-picker-option {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 6px 8px; margin-bottom: 5px; cursor: pointer; color: #e7e5e4; font-size: 11px;
+  }
+  .land-picker-option:hover { background: rgba(255,255,255,0.08); }
+  .land-picker-icon { font-size: 16px; }
+  .land-picker-name-wrap { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .land-picker-name { line-height: 1.2; }
+  .land-picker-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .land-picker-fit { font-size: 13px; }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-thumb { background: #345c3a; border-radius: 4px; }
 
@@ -232,17 +418,118 @@
 </head>
 <body class="bg-moss-950 text-stone-100 font-body min-h-screen flex flex-col items-center p-3">
 
+  <!-- ============ TITLE SCREEN ============ -->
+  <div id="screen-title" class="w-full max-w-md flex flex-col items-center justify-center gap-5 py-10 text-center" style="min-height: 70vh;">
+    <div class="text-5xl">🌱</div>
+    <div>
+      <h1 class="font-display text-3xl font-bold text-gold-400 tracking-wide">Pocket Permaculture</h1>
+      <p class="text-stone-300 text-sm font-semibold mt-2">Steward a living plot. Real permaculture, real restoration.</p>
+    </div>
+    <p class="text-stone-400 text-xs px-6 leading-relaxed">Design a food forest across a real plot of land — shape water, wind and sun, stack a real guild of plants, and watch wildlife return as your ground genuinely heals. Tend it with neighbours doing the same, at your own pace.</p>
+    <p class="text-stone-500 text-[10px] px-6">A living plot. A village of neighbours. Restoration, not just farming 🌳</p>
+    <button onclick="showLandScreen()" class="mt-2 bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-3 px-8 rounded-xl shadow-lg">Start Restoring →</button>
+    <button onclick="showCitySelect()" class="text-stone-500 hover:text-stone-300 text-[10px] underline">🌱 New to companion planting? Try the 5-minute tutorial</button>
+  </div>
+
+  <!-- ============ THE LAND (early preview — terrain model only, no plants/elements yet) ============ -->
+  <div id="screen-land" class="hidden w-full max-w-md flex flex-col gap-3 py-4">
+    <header class="flex flex-col items-center gap-1 mt-2 mb-1 text-center">
+      <div class="text-4xl">🌍</div>
+      <h1 class="font-display text-2xl font-bold text-gold-400 tracking-wide">The Land</h1>
+      <p class="text-stone-500 text-[10px] px-4 leading-relaxed">Early build-in-progress preview. Tap a tile to observe its terrain, then plant a food-forest stack in it — canopy down to root, each layer checked against the real ground and its neighbors.</p>
+    </header>
+
+    <div class="bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700">
+      <div class="flex justify-between items-center mb-2 text-[10px]">
+        <span class="text-gold-300 font-medium">Plot terrain</span>
+        <span class="text-stone-500 font-mono-stat">seed <span id="land-seed-label">—</span> · day <span id="land-day-label">1</span></span>
+      </div>
+
+      <!-- Land economy readout (Sept 2026) — coins from harvesting, trust from
+           giving surplus away instead. See harvestLandPlant/giveLandPlantAway. -->
+      <div class="land-economy-header mb-2">
+        <span class="coins">🪙 <span id="land-coins-label">0</span></span>
+        <span class="trust">🤝 <span id="land-trust-label">0</span></span>
+      </div>
+
+      <div id="land-aspect-banner" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 mb-2 text-[10px] leading-relaxed"></div>
+
+      <!-- Zone vitality (Aug 2026) — one plot-wide number summarizing coverage, fit,
+           and maturity, per updateLandVitalityUI() in the script. -->
+      <div id="land-vitality" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 mb-2 text-[10px] leading-relaxed"></div>
+
+      <div class="flex gap-1 mb-2">
+        <button id="landview-elevation" onclick="setLandViewMode('elevation')" class="px-2 py-1 rounded font-bold bg-gold-600 text-moss-950 text-[10px]">⛰️ Elevation</button>
+        <button id="landview-daylight" onclick="setLandViewMode('daylight')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">☀️ Daylight</button>
+        <button id="landview-wind" onclick="setLandViewMode('wind')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">🌬️ Wind</button>
+        <button id="landview-water" onclick="setLandViewMode('water')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">💧 Water</button>
+      </div>
+
+      <!-- Compass frame around the grid — row 0 = N, col 0 = W by convention (see
+           generateLandPlot). Plain inline positioning rather than new utility classes,
+           consistent with how the grid's own column count is set. The parcel frame
+           inside it is the actual land — one boundary around the whole plot, not a
+           border around every tile. -->
+      <div style="position:relative; padding: 13px 3px;">
+        <span style="position:absolute; top:0; left:50%; transform:translateX(-50%);" class="text-[8px] text-stone-500 font-bold">N</span>
+        <span style="position:absolute; bottom:0; left:50%; transform:translateX(-50%);" class="text-[8px] text-stone-500 font-bold">S</span>
+        <span style="position:absolute; left:0; top:50%; transform:translateY(-50%);" class="text-[8px] text-stone-500 font-bold">W</span>
+        <span style="position:absolute; right:0; top:50%; transform:translateY(-50%);" class="text-[8px] text-stone-500 font-bold">E</span>
+        <div class="land-frame">
+          <div id="land-grid" class="land-grid-parcel"></div>
+        </div>
+      </div>
+
+      <div id="land-legend" class="mb-2"></div>
+
+      <div id="land-tile-info" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 text-[11px] leading-relaxed" style="min-height: 3.5rem;">
+        <span class="text-stone-500">Tap a tile to observe it.</span>
+      </div>
+    </div>
+
+    <!-- Sighting journal (Aug 2026, zone-vitality wiring round) — a field notebook,
+         not a checklist: deliberately no species-count badge anywhere here. See
+         LAND_CREATURES / checkLandSightings() / renderLandSightingsJournal(). -->
+    <div class="bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700 mb-2">
+      <div class="text-gold-300 font-medium text-[10px] mb-2">📖 Field Notebook</div>
+      <div id="land-sightings" class="flex flex-col gap-1.5"></div>
+    </div>
+
+    <!-- The land screen's own simple time control — separate from the balcony
+         game's day/season clock, since there's no tending action here yet to
+         advance time implicitly. See advanceLandDay() in the script. -->
+    <button onclick="advanceLandDay()" class="mb-2 bg-gold-600/20 text-gold-300 border border-gold-500/40 py-2 rounded-lg text-xs font-bold hover:bg-gold-600/30">🌞 Let a day pass</button>
+
+    <div class="flex gap-2 mb-4">
+      <button onclick="rerollLand()" class="flex-1 bg-emerald-700/25 text-emerald-300 border border-emerald-500/40 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700/35">🎲 New Land</button>
+      <button onclick="backToTitleFromLand()" class="flex-1 bg-moss-900/60 text-stone-400 border border-moss-700 py-2 rounded-lg text-xs font-bold hover:bg-moss-900">← Back</button>
+    </div>
+  </div>
+
+  <!-- Plant picker sheet for the land screen — one empty layer slot at a time, opened
+       from renderLandTileInfo()'s "+ Layer" buttons. Overlay lives outside #screen-land
+       so it can sit above everything via position:fixed. -->
+  <div id="land-plant-picker" class="hidden">
+    <div class="land-picker-sheet">
+      <div class="land-picker-header">
+        <span id="land-plant-picker-title" class="text-xs font-bold text-emerald-300">Choose a plant</span>
+        <button onclick="closeLandPlantPicker()" class="text-stone-400 text-[10px] font-bold">✕ Close</button>
+      </div>
+      <div id="land-plant-picker-list"></div>
+    </div>
+  </div>
+
   <!-- ============ CITY SELECT SCREEN ============ -->
-  <div id="screen-city-select" class="w-full max-w-md flex flex-col items-center gap-4 py-4">
+  <div id="screen-city-select" class="hidden w-full max-w-md flex flex-col items-center gap-4 py-4">
     <header class="flex flex-col items-center gap-1 mt-2 mb-1 text-center">
       <div class="text-4xl">🌱</div>
-      <h1 class="font-display text-2xl font-bold text-gold-400 tracking-wide">Pocket Permaculture</h1>
-      <p class="text-stone-400 text-xs">Pick a balcony. Grow a guild. Anywhere in the world.</p>
+      <h1 class="font-display text-2xl font-bold text-gold-400 tracking-wide">Balcony Tutorial</h1>
+      <p class="text-stone-400 text-xs">A quick, one-season taste of companion planting before you head to the land.</p>
     </header>
 
     <div id="city-card-list" class="w-full flex flex-col gap-3"></div>
 
-    <p class="text-stone-500 text-[10px] text-center px-6 mt-1">Each city has its own weather odds — monsoon, heatwave, and everything between. You can switch cities later from the 🔁 button in-game (your plot resets when you do).</p>
+    <p class="text-stone-500 text-[10px] text-center px-6 mt-1">One season (~21 days of play) is enough to learn guilds, watering, and harvesting. <a href="#" onclick="showLandScreen(); return false;" class="text-gold-400 underline font-semibold">Skip straight to the land →</a></p>
   </div>
 
   <!-- ============ TUTORIAL MODAL ============ -->
@@ -265,6 +552,10 @@
           <h3 class="font-display text-gold-400 font-bold mb-1">🕐 Time</h3>
           <p>Time doesn't pass on its own — watering, planting, and clearing pests each nudge the clock forward, and every few of those a full day ticks by (weather rolls, crops grow, the market shifts). In a hurry? ⏩ Fast-Forward spends 1 energy to skip straight to the next day.</p>
         </section>
+
+        <p id="tutorial-minimal-note" class="text-[10px] text-stone-500 text-center">That's everything you need to start. The rest — guilds, weather, seasons, and more — unlocks here as you go, or tap <a href="#" onclick="showTutorial(false); return false;" class="text-gold-400 font-semibold underline">See the full guide now →</a></p>
+
+        <div id="tutorial-advanced" class="hidden flex flex-col gap-4">
         <section>
           <h3 class="font-display text-gold-400 font-bold mb-1">🔁 Regrowth</h3>
           <p class="mb-1">Basil, tomato, marigold, chili, mint, and okra are cut-and-come-again — harvest them and they stay on the tile, flushing again. Bean and spinach are a one-time flush — harvesting clears the tile and you'll need to replant (they sell for more per harvest to make up for it).</p>
@@ -305,12 +596,16 @@
           <h3 class="font-display text-gold-400 font-bold mb-1">🏙️ Cities</h3>
           <p>Mumbai, Phoenix, and London each carry different monsoon/heatwave odds, evaporation rates, and growth speed. Use 🔁 Change City anytime to relocate — your plot resets, but coins, saved seeds, and season progress carry over.</p>
         </section>
+        </div>
       </div>
       <div class="p-4 pt-0">
         <button onclick="hideTutorial()" class="w-full bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-2.5 rounded-xl">Got it, let's grow 🌱</button>
       </div>
     </div>
   </div>
+
+  <!-- ============ FIRST-HARVEST / GUILD-UNLOCK TOAST (subtractive onboarding: earned UI reveal) ============ -->
+  <div id="unlock-toast" class="hidden fixed left-1/2 z-50 px-4 py-2.5 rounded-xl shadow-2xl bg-emerald-700 text-white text-xs font-bold text-center max-w-[85vw]" style="top: 12px; transform: translateX(-50%);"></div>
 
   <!-- ============ HARVEST FESTIVAL RECAP MODAL ============ -->
   <div id="recap-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-end sm:items-center justify-center p-3">
@@ -330,10 +625,11 @@
           <div class="bg-moss-950/60 rounded px-2.5 py-1.5 flex justify-between"><span class="text-stone-400 font-body">Heirlooms</span><span id="recap-heirlooms" class="text-blue-300">👑 0</span></div>
         </div>
         <div id="recap-unlocks" class="hidden bg-emerald-700/25 border border-emerald-500/40 text-emerald-300 rounded-lg px-3 py-2 text-xs font-bold text-center"></div>
-        <p class="text-[10px] text-stone-500 text-center">A fresh plot awaits — coins and saved seeds carry over. Weather &amp; pests get a little tougher each season.</p>
+        <p id="recap-footnote" class="text-[10px] text-stone-500 text-center">A fresh plot awaits — coins and saved seeds carry over. Weather &amp; pests get a little tougher each season.</p>
       </div>
-      <div class="p-4 pt-0">
-        <button onclick="startNextSeason()" class="w-full bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-2.5 rounded-xl">Start Next Season →</button>
+      <div class="p-4 pt-0 flex flex-col gap-2">
+        <button id="recap-primary-btn" onclick="startNextSeason()" class="w-full bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-2.5 rounded-xl">Start Next Season →</button>
+        <a id="recap-secondary-link" href="#" onclick="startNextSeason(); return false;" class="hidden text-center text-[11px] text-stone-500 hover:text-stone-300 underline">Keep growing this balcony instead</a>
       </div>
     </div>
   </div>
@@ -356,7 +652,10 @@
         <div id="day-counter" class="text-stone-400 text-[10px] font-mono-stat mt-0.5">Day 1/21 · Season 1</div>
         <div id="action-progress" class="text-stone-500 text-[9px] font-mono-stat mt-0.5">🕐 3 actions until next day (or ⏩ Fast-Forward)</div>
       </div>
-      <button onclick="changeCity()" class="px-2 py-1 rounded-lg font-bold bg-clay-600 hover:bg-clay-500 text-white text-[11px] whitespace-nowrap">🔁 Change City</button>
+      <div class="flex flex-col items-end gap-1">
+        <button onclick="changeCity()" class="px-2 py-1 rounded-lg font-bold bg-clay-600 hover:bg-clay-500 text-white text-[11px] whitespace-nowrap">🔁 Change City</button>
+        <a href="#" onclick="showLandScreen(); return false;" class="text-[10px] text-gold-400 underline whitespace-nowrap">🌳 Head to the land →</a>
+      </div>
     </section>
 
     <!-- Weather Alert Banner -->
@@ -378,10 +677,10 @@
     <main class="w-full bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700">
       <div class="flex justify-between items-center mb-2 text-[11px]">
         <span class="text-gold-300 font-medium">Plot Status</span>
-        <span id="guild-status" class="text-emerald-400 font-bold">✨ Guilds: 0</span>
+        <span id="guild-status" class="hidden text-emerald-400 font-bold">✨ Guilds: 0</span>
       </div>
 
-      <div id="season-goals" class="flex justify-between items-center bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-1.5 mb-2 text-[10px]"></div>
+      <div id="season-goals" class="hidden flex justify-between items-center bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-1.5 mb-2 text-[10px]"></div>
 
       <div id="grid" class="grid grid-cols-4 gap-2 mb-2"></div>
 
@@ -431,11 +730,1599 @@
 <script>
   const GRID_ROWS = 4, GRID_COLS = 4, GRID_SIZE = 16;
 
+  // ================= THE LAND (early preview) =================
+  // First buildable slice of the land-game pivot (see POCKET_PERMACULTURE_MEMORY.md /
+  // land-game-content-draft.md): the terrain model only — elevation/aspect/wind/water,
+  // no plants or elements placed on it yet. Deliberately self-contained from the balcony
+  // game's own state/vars (LAND_* not GRID_*) so it can't collide with or destabilize the
+  // tested balcony sim while this is still WIP.
+  //
+  // Plot size (8x8) is a working default pinned to unblock this build — bigger than the
+  // balcony's 4x4 per the "steward a larger plot" premise, nothing else pins a number yet.
+  const LAND_ROWS = 8, LAND_COLS = 8, LAND_SIZE = 64;
+  const LAND_EDGES = ['N', 'S', 'E', 'W'];
+  const LAND_EDGE_OPPOSITE = { N: 'S', S: 'N', E: 'W', W: 'E' };
+  const WIND_FULL = { N: 'north', S: 'south', E: 'east', W: 'west' };
+
+  // What each compass direction actually means for a slope's sun exposure — real solar
+  // geography (Northern Hemisphere, matching the India-rooted scope), not an abstract
+  // "sunny/shady" binary. This is the direction indicator the first terrain pass was
+  // missing: south gets the most direct sun overall; north the least; east and west get
+  // similar total hours but very different character, since the sun rises in the east
+  // and sets in the west — an east slope warms up gently in the morning and sits in
+  // shade all afternoon, a west slope sits in shade all morning and takes the day's
+  // hottest sun right when the air is already warmest.
+  const ASPECT_INFO = {
+    S: { label: 'South-facing', icon: '☀️', blurb: 'Full, strong sun most of the day, year-round — the hottest, driest exposure on the plot.' },
+    N: { label: 'North-facing', icon: '🌑', blurb: 'The coolest, shadiest exposure on the plot — gentle light, holds moisture longest.' },
+    E: { label: 'East-facing', icon: '🌅', blurb: 'Morning sun, afternoon shade — a gentle warm-up, though tender growth can get caught out by a fast morning thaw after a cold night.' },
+    W: { label: 'West-facing', icon: '🌇', blurb: "Afternoon sun, morning shade — fewer lit hours than south, but often the day's harshest heat, since the sun lands hardest right when the day is already at its warmest." },
+  };
+
+  let landSeed = null;
+  let landPlot = null;
+  let landViewMode = 'elevation';
+  let selectedLandTile = null;
+
+  // Small seeded PRNG (mulberry32) so a plot's terrain is fully reproducible from its
+  // seed alone — lets a plot be regenerated from a stored number instead of storing
+  // every tile, which is the point: it's a cheap format for the multiplayer snapshot
+  // registry later (see the memory file's Multiplayer layer section).
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // One-time, O(tiles) generation — never recomputed per day-tick. Grid convention:
+  // row 0 = north (top), col 0 = west (left).
+  function generateLandPlot(seed) {
+    const rand = mulberry32(seed);
+
+    function distFromEdge(r, c, edge) {
+      if (edge === 'N') return r;
+      if (edge === 'S') return (LAND_ROWS - 1) - r;
+      if (edge === 'W') return c;
+      return (LAND_COLS - 1) - c; // 'E'
+    }
+
+    // Elevation axis: a random ridge edge, streambed on the opposite edge.
+    const ridgeEdge = LAND_EDGES[Math.floor(rand() * 4)];
+    const streambedEdge = LAND_EDGE_OPPOSITE[ridgeEdge];
+    const elevAxisVertical = (ridgeEdge === 'N' || ridgeEdge === 'S');
+    const elevMaxDist = elevAxisVertical ? (LAND_ROWS - 1) : (LAND_COLS - 1);
+
+    // Aspect: NOT a separate random axis — an earlier pass generated it that way (a
+    // perpendicular random edge) for tile-combination variety, but that wasn't honest
+    // to real terrain, and it's also what was missing a real direction indicator. A
+    // slope's aspect *is* the direction it faces, which is the direction you'd be
+    // looking if you stood on it and looked downhill — i.e. the streambed direction.
+    // So aspect is derived directly from the elevation axis: one fixed compass value
+    // for the whole plot, not something that varies tile-to-tile. See ASPECT_INFO
+    // above for what each direction actually means for sun character.
+    const aspect = streambedEdge;
+
+    // Wind: one prevailing direction per plot (the edge the wind blows FROM).
+    const prevailingWind = LAND_EDGES[Math.floor(rand() * 4)];
+
+    const tiles = [];
+    for (let r = 0; r < LAND_ROWS; r++) {
+      for (let c = 0; c < LAND_COLS; c++) {
+        // Elevation: interpolate tier 0-3 from streambed to ridge, with light jitter
+        // so the plot reads as an organic slope rather than a perfect staircase.
+        const distFromStreambed = distFromEdge(r, c, streambedEdge);
+        const elevFrac = elevMaxDist === 0 ? 0.5 : distFromStreambed / elevMaxDist;
+        let elevation = Math.round(elevFrac * 3);
+        if (rand() < 0.2) elevation += rand() < 0.5 ? -1 : 1;
+        elevation = Math.max(0, Math.min(3, elevation));
+
+        // Sun duration: separate from aspect (which sets the *character* of the light,
+        // shown in the plot-wide compass banner). This is about how many hours of it a
+        // tile actually gets — low ground sits in the shadow of the surrounding higher
+        // ground for part of the day (a real valley-shading effect); high ground has
+        // nothing blocking it. This is also the honest answer to "what's the
+        // relationship between sun and elevation" — elevation affects duration/
+        // reliability of light, aspect (above) affects its character/heat.
+        const sunDuration = elevation >= 2 ? 'full' : 'shortened';
+
+        // Wind: open within 2 tiles of the windward edge — a placed Live Hedge/
+        // Windbreak element (see LAND_ELEMENTS below) counters this the same way an
+        // established pioneer plant already does (hasNearbyWindbreak).
+        const windExposure = distFromEdge(r, c, prevailingWind) <= 1 ? 'open' : 'sheltered';
+
+        // Water: moistureProfile/flowAccum/flowsTo are filled in below by
+        // recomputeWaterFlow() once every tile's elevation is known — a tile's
+        // neighbors have to exist first to compute a real flow direction.
+        // `element`/`terraced` are the design-layer slots LAND_ELEMENTS writes into —
+        // one element per tile, separate from the plant stack (Section 4: elements
+        // are placed once and passively affect a radius, not tended per-layer).
+        tiles.push({ r, c, elevation, sunDuration, windExposure, moistureProfile: 'dry', flowAccum: 1, flowsTo: null, canopyShade: false, element: null, terraced: false });
+      }
+    }
+
+    recomputeWaterFlow(tiles);
+    return { seed, ridgeEdge, streambedEdge, aspect, prevailingWind, tiles };
+  }
+
+  // Real water-flow recompute (Aug 25 2026, dynamic-water round; extended with the
+  // placeable water/wind elements below) — replaces the old static "elevation tier
+  // 0-1 = runoff, 2-3 = dry" bucket, which couldn't tell a genuine drainage line
+  // apart from a low tile that just happens to be off to the side of one. Written as
+  // its own standalone, re-callable function specifically so a placed element could
+  // perturb the field and call this again to propagate the effect — exactly what
+  // step 4 below now does for swale/check dam/pond/banana circle, per the content
+  // draft's own "fold into the existing mechanism" note for Section 4.
+  function recomputeWaterFlow(tiles) {
+    const at = (r, c) => (r < 0 || r >= LAND_ROWS || c < 0 || c >= LAND_COLS) ? null : tiles[r * LAND_COLS + c];
+
+    // 1) Flow direction: each tile drains toward whichever real orthogonal neighbor
+    //    sits strictly lower (ties broken toward the lowest such neighbor found) — the
+    //    same "4 real orthogonal neighbors" adjacency every other land-game system
+    //    already uses. No strictly-lower neighbor means a local low point: a genuine
+    //    depression that catches its own water rather than passing it further on.
+    tiles.forEach(t => {
+      let downhill = null;
+      [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+        const n = at(t.r + dr, t.c + dc);
+        if (n && n.elevation < t.elevation && (!downhill || n.elevation < downhill.elevation)) downhill = n;
+      });
+      t.flowsTo = downhill ? (downhill.r * LAND_COLS + downhill.c) : null;
+      t.flowAccum = 1; // starts as just itself
+    });
+
+    // 2) Accumulate: sweep tiles from highest elevation to lowest, so a tile has
+    //    already collected everything that drains into it from higher neighbors
+    //    before it passes its own running total downhill — a standard flow-
+    //    accumulation pass over the elevation field (a real, if coarse, 4-tier DEM).
+    tiles.slice().sort((a, b) => b.elevation - a.elevation).forEach(t => {
+      if (t.flowsTo !== null) tiles[t.flowsTo].flowAccum += t.flowAccum;
+    });
+
+    // 3) Moisture tier from a blend of position and actual accumulated flow, equal
+    //    weight — low ground holds moisture even with little upstream drainage
+    //    (physically closer to the water table), but a real drainage line reads
+    //    wetter than a same-elevation tile sitting off to the side of one, which the
+    //    old elevation-only bucket had no way to distinguish. Because tier-3 (ridge)
+    //    tiles can never receive flow from anything higher (3 is the elevation cap),
+    //    they always land in `flowAccum === 1` and therefore always resolve to 'dry'
+    //    — the one case where this still matches the old static rule exactly; tiers
+    //    0-2 now genuinely vary with the terrain around them, not just their own tier.
+    // Terracing changes how a tile *reads* (its moisture score), not the physical
+    // flow-direction graph above — a stepped, flattened run still sheds water the
+    // same real direction, it just holds more of it locally. Kept as a separate
+    // helper (also used by slopeFitOk) rather than mutating t.elevation itself, so
+    // the raw elevation field stays the honest terrain-generation record.
+    const combinedScores = tiles.map(t => {
+      const effElev = effectiveElevation(t);
+      const elevScore = (3 - effElev) / 3; // 1 at the streambed edge, 0 at the ridge
+      const flowScore = Math.min(1, (t.flowAccum - 1) / 8); // normalized against a plausible confluence size on a 64-tile plot
+      return elevScore * 0.5 + flowScore * 0.5;
+    });
+
+    // 4) Element overrides — each placed water element nudges the raw combined score
+    //    (its own tile and/or a specific real-terrain-grounded radius) before tiering,
+    //    exactly the "modify the flow graph, then let recomputeWaterFlow propagate it"
+    //    approach the content draft asked for, rather than a second parallel system.
+    tiles.forEach((t, i) => {
+      if (t.element === 'swale') {
+        // "Flattens local flow; raises moisture on its downhill edge" — boosts the
+        // swale tile itself and specifically the one real tile it drains toward.
+        combinedScores[i] += 0.25;
+        if (t.flowsTo !== null) combinedScores[t.flowsTo] += 0.15;
+      } else if (t.element === 'checkdam') {
+        // "Blocks/slows flow through the tile; raises moisture upstream" — boosts
+        // the dam tile itself and every real neighbor that drains into it.
+        combinedScores[i] += 0.2;
+        tiles.forEach((u, j) => { if (u.flowsTo === i) combinedScores[j] += 0.2; });
+      } else if (t.element === 'pond') {
+        // "Strong zone-vitality boost... supports high-water-need food plants" — a
+        // built body of water, so its own tile and immediate ring read fully wet.
+        combinedScores[i] = 1;
+        [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+          const n = at(t.r + dr, t.c + dc);
+          if (n) combinedScores[n.r * LAND_COLS + n.c] += 0.2;
+        });
+      } else if (t.element === 'bananacircle') {
+        // "Boosts a ring of surrounding tiles" — a smaller, less absolute version of
+        // the pond's ring effect, matching the doc's lighter framing for this one.
+        combinedScores[i] += 0.2;
+        [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+          const n = at(t.r + dr, t.c + dc);
+          if (n) combinedScores[n.r * LAND_COLS + n.c] += 0.15;
+        });
+      }
+    });
+
+    tiles.forEach((t, i) => {
+      const combined = Math.max(0, Math.min(1, combinedScores[i]));
+      t.moistureProfile = combined >= 0.65 ? 'runoff' : combined >= 0.35 ? 'moist' : 'dry';
+    });
+  }
+
+  // Terracing ("converts a 2-3 tile slope run into stepped flat ground, removing the
+  // elevation penalty across that run") reads as one elevation tier flatter for every
+  // terrain check that cares about elevation — moisture scoring above, and slope
+  // preference below — without touching the tile's real generated elevation.
+  function effectiveElevation(tile) {
+    return tile.terraced ? Math.max(0, tile.elevation - 1) : tile.elevation;
+  }
+
+  // ================= LAND PLANTING — the food-forest layer =================
+  // "Aim for the aspirational ecosystem game, not the balcony architecture" (AV, Aug
+  // 25 2026). The balcony game is one plant per grid cell. Real food-forest design —
+  // and land-game-content-draft.md Section 1's Principles-board grounding — is about
+  // *stacking*: several plants sharing one patch of ground at different heights
+  // (canopy down to root) the way a real homestead plot works. So a land tile holds
+  // up to one plant per layer slot, not one plant total.
+  const LAND_LAYERS = ['canopy', 'understory', 'shrub', 'groundcover', 'climber', 'root'];
+  const LAND_LAYER_INFO = {
+    canopy:      { label: 'Canopy',      icon: '🌳' },
+    understory:  { label: 'Understory',  icon: '🌴' },
+    shrub:       { label: 'Shrub',       icon: '🪴' },
+    groundcover: { label: 'Groundcover', icon: '🍀' },
+    climber:     { label: 'Climber',     icon: '🫛' },
+    root:        { label: 'Root',        icon: '🥕' },
+  };
+
+  // Guild roles are categorical flags checked against *neighbors by role*, not a
+  // hand-authored pairwise companions list — this is the content draft's Section 2
+  // taxonomy, and the actual mechanical core of "ecosystem, not a grid of isolated
+  // cells." `forgiving: true` roles offset a growing-condition mismatch elsewhere on
+  // the plant (soil/shelter support); the rest are real effects the game is honest
+  // about not yet having systems for (pests, pollination, mulch) — shown as an
+  // active-guild badge rather than invented busywork numbers. Exact magnitudes are
+  // explicitly a build-time balance pass per the content draft, not fixed here.
+  const LAND_GUILD_ROLE_INFO = {
+    nitrogenFixer:       { label: 'Nitrogen fixer',       blurb: 'Feeds nitrogen to neighboring roots.', forgiving: true },
+    nursePlant:          { label: 'Nurse plant',          blurb: 'Shelters young neighbors while they establish.', forgiving: true },
+    dynamicAccumulator:  { label: 'Dynamic accumulator',  blurb: 'Mines subsoil nutrients up for neighbors over time.', forgiving: true },
+    pestShield:          { label: 'Pest shield',          blurb: 'Repels pests from neighbors.', forgiving: false },
+    pollinatorAttractor: { label: 'Pollinator attractor', blurb: 'Draws pollinators that boost neighboring fruit set.', forgiving: false },
+    liveMulch:           { label: 'Live mulch',           blurb: 'Suppresses weeds and holds moisture for neighbors.', forgiving: false },
+    trapCrop:            { label: 'Trap crop',            blurb: 'Draws pests onto itself, away from neighbors.', forgiving: false },
+    biomassProducer:     { label: 'Biomass producer',     blurb: 'Fast-growing cut-and-drop material for mulch.', forgiving: false },
+  };
+
+  // The India-rooted roster from land-game-content-draft.md Section 3 — the balcony
+  // game's 8 stay (still common in Indian home gardens, per the doc) with layer/
+  // guild/terrain-fit fields added; the (originally) 22 new entries are transcribed
+  // straight from that section's table, plus bamboo (added Aug 25 2026, see below).
+  // A few icons are the closest available Unicode glyph, not a literal match (no
+  // dedicated jackfruit/papaya/radish emoji exist) — noted so a future pass doesn't
+  // mistake them for a species mixup.
+  //
+  // growthSpeed/pioneer/windSensitive (added Aug 25 2026 — see the memory file's
+  // "pioneer species" build note for full sourcing): real permaculture succession
+  // planting recognizes fast pioneer species that tolerate harsh open conditions and
+  // physically shelter slower, longer-lived "climax" species while they establish —
+  // then get thinned back or naturally get succeeded once the climax canopy closes
+  // (Tané's Trees Trust factsheet on nurse-species succession). `pioneer: true` marks
+  // plants that can act as that living shelter; `windSensitive: true` marks tender
+  // young trees/plants that specifically benefit from it. Growth speed is otherwise
+  // informational/flavor for now — there's still no growth clock to simulate it.
+  const LAND_PLANTS = {
+    // --- existing balcony roster, extended with land-game fields ---
+    basil:      { name: 'Basil',                       icon: '🌿', layer: 'groundcover', roles: [], sunNeed: 'full',    waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    tomato:     { name: 'Tomato',                       icon: '🍅', layer: 'shrub',       roles: [], sunNeed: 'full',    waterNeed: 'high',   slopePref: 'any', growthSpeed: 'medium' },
+    bean:       { name: 'Bean',                         icon: '🫘', layer: 'climber',     roles: ['nitrogenFixer'], sunNeed: 'full', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    marigold:   { name: 'Marigold',                     icon: '🌼', layer: 'groundcover', roles: ['pestShield'], sunNeed: 'full', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    chili:      { name: 'Chili',                        icon: '🌶️', layer: 'shrub',       roles: [], sunNeed: 'full',    waterNeed: 'low',    slopePref: 'ridge', growthSpeed: 'medium' },
+    mint:       { name: 'Mint',                         icon: '🍃', layer: 'groundcover', roles: ['liveMulch'], sunNeed: 'partial', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    okra:       { name: 'Okra',                         icon: '🫛', layer: 'shrub',       roles: [], sunNeed: 'full',    waterNeed: 'low',    slopePref: 'mid', growthSpeed: 'fast' },
+    spinach:    { name: 'Spinach',                      icon: '🥬', layer: 'groundcover', roles: [], sunNeed: 'partial', waterNeed: 'medium', slopePref: 'low', growthSpeed: 'fast' },
+    // --- India-rooted land-game additions (content draft Section 3) ---
+    karanj:     { name: 'Indian Beech (Karanj)',         icon: '🌳', layer: 'canopy',      roles: ['nitrogenFixer', 'biomassProducer', 'pollinatorAttractor'], sunNeed: 'full', waterNeed: 'low', slopePref: 'ridge', growthSpeed: 'slow' },
+    glyricidia: { name: 'Mexican Lilac (Glyricidia)',    icon: '🌲', layer: 'canopy',      roles: ['nitrogenFixer', 'biomassProducer', 'nursePlant', 'pestShield'], sunNeed: 'full', waterNeed: 'low', slopePref: 'any', growthSpeed: 'fast', pioneer: true },
+    hadga:      { name: 'Vegetable Hummingbird Tree (Hadga)', icon: '🌸', layer: 'understory', roles: ['nitrogenFixer'], sunNeed: 'full', waterNeed: 'medium', slopePref: 'mid', growthSpeed: 'fast', pioneer: true },
+    drumstick:  { name: 'Drumstick (Moringa)',           icon: '🌿', layer: 'understory',  roles: ['biomassProducer'], sunNeed: 'full', waterNeed: 'low', slopePref: 'mid', growthSpeed: 'fast', pioneer: true },
+    mango:      { name: 'Mango',                         icon: '🥭', layer: 'canopy',      roles: ['pollinatorAttractor'], sunNeed: 'full', waterNeed: 'medium', slopePref: 'mid', growthSpeed: 'slow', windSensitive: true },
+    jackfruit:  { name: 'Jackfruit',                     icon: '🍈', layer: 'canopy',      roles: [], sunNeed: 'full', waterNeed: 'medium', slopePref: 'mid', growthSpeed: 'slow', windSensitive: true },
+    amla:       { name: 'Indian Gooseberry (Amla)',      icon: '🫒', layer: 'shrub',       roles: [], sunNeed: 'partial', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'medium' },
+    kadipatta:  { name: 'Curry Leaves (Kadipatta)',      icon: '🌿', layer: 'shrub',       roles: ['pestShield'], sunNeed: 'partial', waterNeed: 'low', slopePref: 'any', growthSpeed: 'medium' },
+    tur:        { name: 'Pigeon Pea (Tur)',              icon: '🫛', layer: 'understory',  roles: ['nitrogenFixer', 'pollinatorAttractor'], sunNeed: 'full', waterNeed: 'low', slopePref: 'mid', growthSpeed: 'fast', pioneer: true },
+    tulsi:      { name: 'Holy Basil (Tulsi)',            icon: '🪴', layer: 'groundcover', roles: ['pollinatorAttractor'], sunNeed: 'full', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    coriander:  { name: 'Coriander (Dhania)',            icon: '🌱', layer: 'groundcover', roles: ['pestShield', 'trapCrop'], sunNeed: 'partial', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    methi:      { name: 'Fenugreek (Methi)',             icon: '🌱', layer: 'groundcover', roles: ['pestShield', 'dynamicAccumulator'], sunNeed: 'partial', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    mustard:    { name: 'Mustard (Sarson)',              icon: '🌼', layer: 'groundcover', roles: ['trapCrop'], sunNeed: 'full', waterNeed: 'low', slopePref: 'any', growthSpeed: 'fast' },
+    radish:     { name: 'Radish (Mooli)',                icon: '🥕', layer: 'root',        roles: ['trapCrop'], sunNeed: 'full', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    cowpea:     { name: 'Cowpea (Chawli)',                icon: '🫛', layer: 'understory',  roles: ['nitrogenFixer', 'trapCrop'], sunNeed: 'full', waterNeed: 'low', slopePref: 'any', growthSpeed: 'fast' },
+    vetiver:    { name: 'Vetiver',                        icon: '🌾', layer: 'groundcover', roles: ['biomassProducer', 'liveMulch'], sunNeed: 'full', waterNeed: 'low', slopePref: 'ridge', growthSpeed: 'medium' },
+    lemongrass: { name: 'Lemongrass',                     icon: '🌾', layer: 'groundcover', roles: ['biomassProducer', 'pestShield'], sunNeed: 'full', waterNeed: 'low', slopePref: 'any', growthSpeed: 'medium' },
+    banana:     { name: 'Banana',                         icon: '🍌', layer: 'understory',  roles: ['liveMulch'], sunNeed: 'full', waterNeed: 'high', slopePref: 'low', growthSpeed: 'fast', pioneer: true, windSensitive: true },
+    papaya:     { name: 'Papaya',                         icon: '🍐', layer: 'understory',  roles: [], sunNeed: 'full', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast', pioneer: true, windSensitive: true },
+    tondli:     { name: 'Ivy Gourd (Tondli)',             icon: '🥒', layer: 'climber',     roles: [], sunNeed: 'partial', waterNeed: 'medium', slopePref: 'any', growthSpeed: 'fast' },
+    purslane:   { name: 'Purslane (Kulfa)',               icon: '🍀', layer: 'groundcover', roles: ['dynamicAccumulator', 'liveMulch'], sunNeed: 'full', waterNeed: 'low', slopePref: 'any', growthSpeed: 'fast' },
+    garlic:     { name: 'Garlic',                         icon: '🧄', layer: 'root',        roles: ['dynamicAccumulator', 'pestShield'], sunNeed: 'full', waterNeed: 'low', slopePref: 'any', growthSpeed: 'medium' },
+    // --- Pioneer/windbreak addition (Aug 25, 2026) ---
+    bamboo:     { name: 'Bamboo (Dendrocalamus strictus)', icon: '🎍', layer: 'canopy',    roles: ['nursePlant', 'biomassProducer'], sunNeed: 'full', waterNeed: 'low', slopePref: 'ridge', growthSpeed: 'fast', pioneer: true },
+  };
+
+  // Blends per-tile sunDuration (elevation) with plot-wide aspect (compass character)
+  // and dynamic canopyShade into the single full/partial/shade tier plants are
+  // checked against — this closes the open item flagged in
+  // land-game-content-draft.md Section 6 ("needs an actual formula once plants
+  // exist"). Duration sets the starting tier (full duration -> tier 'full',
+  // shortened -> 'partial'); aspect nudges it one step in the direction its real
+  // character implies (south runs hottest/most-exposed even on shortened-duration
+  // ground, so it nudges up; north runs coolest/shadiest even on full-duration
+  // ground, so it nudges down; east/west affect *when* the heat lands, not the net
+  // exposure, so they don't shift the tier); a canopy tree overhead knocks it down
+  // one further step. "Mature" collapses to "present" for now — the land game has no
+  // day-tick/growth clock yet (still true after this pass), so canopyShade fires the
+  // moment a canopy plant is placed rather than once it's grown; worth revisiting
+  // once a real growth clock exists.
+  const SUN_TIERS = ['shade', 'partial', 'full'];
+  function effectiveSunTier(tile) {
+    let idx = tile.sunDuration === 'full' ? 2 : 1;
+    if (landPlot.aspect === 'S') idx += 1;
+    if (landPlot.aspect === 'N') idx -= 1;
+    if (tile.canopyShade) idx -= 1;
+    return SUN_TIERS[Math.max(0, Math.min(2, idx))];
+  }
+
+  function waterFitOk(tile, plant) {
+    if (plant.waterNeed === 'high') return tile.moistureProfile === 'runoff';
+    if (plant.waterNeed === 'low') return tile.moistureProfile === 'dry';
+    // 'medium' used to tolerate either tier unconditionally, back when moisture was
+    // only ever 'runoff'/'dry' with no middle ground to actually prefer. Now that
+    // recomputeWaterFlow() gives moisture a real 3rd tier, medium plants get the same
+    // honest treatment sunNeed/slopePref already have: a real preferred tier of their
+    // own ('moist') rather than an exemption from the check.
+    return tile.moistureProfile === 'moist';
+  }
+
+  function slopeFitOk(tile, plant) {
+    if (plant.slopePref === 'any') return true;
+    // Uses effectiveElevation (terracing-aware), not the raw generated tile.elevation
+    // — a terraced former-slope tile should genuinely open up 'low'/'mid' planting
+    // that its real elevation would otherwise block, matching the content draft's
+    // "enabling water-retentive planting on what was dry slope" for this element.
+    const eff = effectiveElevation(tile);
+    if (plant.slopePref === 'ridge') return eff === 3;
+    if (plant.slopePref === 'low') return eff === 0;
+    return eff === 1 || eff === 2; // 'mid'
+  }
+
+  // ---- Growth clock (added Aug 25 2026) ----
+  // The land screen had no notion of time at all until now — every mechanic that
+  // referenced "mature" (canopyShade, a pioneer's windbreak) actually fired the
+  // instant something was placed. landDay is a separate, simple clock from the
+  // balcony game's own day/season system (advanced by its own action, not shared
+  // state) — the land screen has no tending actions yet, so "let a day pass" is the
+  // whole interaction for now. Each planted entry is `{ key, plantedOn }`, not a bare
+  // plant key, so growth stage can be derived from elapsed landDay - plantedOn.
+  // Threshold days are placeholders (like every other magnitude flagged in the
+  // content draft as a balance-pass task), but the ordering is grounded in the same
+  // pioneer-species research from last round: fast pioneers establish in days, slow
+  // climax trees take much longer — see land-game-content-draft.md's growth-clock note.
+  let landDay = 1;
+  const LAND_GROWTH_STAGES = ['seedling', 'establishing', 'mature'];
+  const LAND_GROWTH_THRESHOLDS = { fast: [2, 5], medium: [4, 10], slow: [8, 20] }; // [establishingAt, matureAt]
+  function landGrowthStage(entry, growthSpeed) {
+    const age = landDay - entry.plantedOn;
+    const th = LAND_GROWTH_THRESHOLDS[growthSpeed] || LAND_GROWTH_THRESHOLDS.medium;
+    if (age >= th[1]) return 'mature';
+    if (age >= th[0]) return 'establishing';
+    return 'seedling';
+  }
+  // 0/0.45/1 rather than 0/0.5/1 — a seedling still reads as faintly present in the
+  // Terra-Nil-style growth overlay (renderLandGrid) rather than totally invisible.
+  const LAND_GROWTH_FACTOR = { seedling: 0.12, establishing: 0.5, mature: 1 };
+
+  // Every planted entry on this tile's own stack (optionally excluding one layer, so
+  // a plant doesn't count itself) plus everything in the four real orthogonal
+  // neighbor tiles' stacks — the actual "guild" a planting is checked against,
+  // matching Section 2's "evaluated against neighbor tiles by role" rule rather than
+  // a specific-plant-name lookup.
+  function collectNearbyEntries(tile, excludeLayer) {
+    const own = Object.entries(tile.plants || {})
+      .filter(([layer]) => layer !== excludeLayer)
+      .map(([, entry]) => entry);
+    const neighbors = [];
+    [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+      const n = landTileAt(tile.r + dr, tile.c + dc);
+      if (n) neighbors.push(...Object.values(n.plants || {}));
+    });
+    return [...own, ...neighbors];
+  }
+
+  // Pioneer species: fast, hardy plants that tolerate open/exposed conditions and
+  // physically shelter slower "climax" plantings while they establish — a real
+  // succession-planting pattern (see the memory file's pioneer-species build note for
+  // sourcing), not the same thing as the `nursePlant` guild role, though the two
+  // overlap (several pioneer trees here are also flagged nursePlant, which is
+  // realistic — pioneers are very often nitrogen-fixing nurse trees in practice).
+  // `windSensitive` plants only care about this on a tile that's actually exposed
+  // (`windExposure === 'open'`) — a windbreak stops mattering once you're already
+  // sheltered by the terrain itself. Requires the sheltering plant to have at least
+  // started establishing — a bamboo shoot planted yesterday isn't dense enough to
+  // block wind yet, closing the "fires the instant it's placed" gap flagged last round.
+  function hasNearbyWindbreak(tile, excludeLayer) {
+    const plantWindbreak = collectNearbyEntries(tile, excludeLayer).some(entry => {
+      const p = LAND_PLANTS[entry.key];
+      if (!p || !(p.pioneer || (p.roles || []).includes('nursePlant'))) return false;
+      return landGrowthStage(entry, p.growthSpeed) !== 'seedling';
+    });
+    if (plantWindbreak) return true;
+    // A placed Live Hedge/Windbreak element (LAND_ELEMENTS) is the design-layer's own
+    // version of the same real thing, per the content draft's explicit note that this
+    // element should fold into this exact check rather than becoming a second wind
+    // system. A built structure doesn't need to "establish" the way a living pioneer
+    // does — it's already there once placed.
+    return [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dr, dc]) => {
+      const n = landTileAt(tile.r + dr, tile.c + dc);
+      return n && n.element === 'hedge';
+    });
+  }
+
+  function windFitOk(tile, plant, layer) {
+    if (!plant.windSensitive) return true;
+    if (tile.windExposure !== 'open') return true;
+    return hasNearbyWindbreak(tile, layer);
+  }
+
+  // Soft mismatch scoring, not a hard block — "mismatches reduce growth rate rather
+  // than blocking planting outright" per the content draft's slopePref row, extended
+  // here to sun/water too since the same forgiving philosophy fits the whole terrain
+  // check. `forgiving` guild roles cancel one mismatch each (capped at the actual
+  // mismatch count) — but only from a stack-mate/neighbor that's actually established
+  // (not a same-day seedling), the same growth-clock gate as the windbreak check
+  // above; a plant's *badge* list still shows every active role at any stage, since
+  // botanically a seedling nitrogen-fixer still IS one, it just isn't strong enough
+  // yet to spare a neighbor a mismatch.
+  function computePlantFit(tile, layer) {
+    const entry = tile.plants[layer];
+    if (!entry) return null;
+    const plant = LAND_PLANTS[entry.key];
+    const stage = landGrowthStage(entry, plant.growthSpeed);
+    const tierIdx = { shade: 0, partial: 1, full: 2 };
+    const windOk = windFitOk(tile, plant, layer);
+    // A Herb Spiral's whole point is hosting several sun/water microzones in one
+    // footprint (content draft Section 4) — honest way to express that with the
+    // existing single-tile terrain fields is to exempt sun/water specifically from
+    // the mismatch count there, while slope/wind (real physical position, not a
+    // microzone the spiral creates) still apply normally.
+    const onHerbSpiral = tile.element === 'herbspiral';
+    let mismatches = (onHerbSpiral ? 0 : Math.abs(tierIdx[effectiveSunTier(tile)] - tierIdx[plant.sunNeed]))
+      + (onHerbSpiral ? 0 : (waterFitOk(tile, plant) ? 0 : 1))
+      + (slopeFitOk(tile, plant) ? 0 : 1)
+      + (windOk ? 0 : 1);
+    const nearby = collectNearbyEntries(tile, layer);
+    const activeRoles = new Set();
+    const forgivingRoles = new Set();
+    nearby.forEach(e => {
+      const p = LAND_PLANTS[e.key];
+      (p.roles || []).forEach(r => {
+        activeRoles.add(r);
+        if (LAND_GUILD_ROLE_INFO[r].forgiving && landGrowthStage(e, p.growthSpeed) !== 'seedling') forgivingRoles.add(r);
+      });
+    });
+    // A Keyhole Bed's "strong edge-effect bonus" (Section 4) is modeled as one flat
+    // extra point of forgiveness on top of whatever guild roles are already active —
+    // real edge-effect planting is inherently more forgiving of an imperfect terrain
+    // match, not literally a guild role itself.
+    const keyholeBonus = tile.element === 'keyhole' ? 1 : 0;
+    // Seed sovereignty (economy section) — a planting grown from your own saved
+    // seed, replanted generation over generation on this same plot, slowly adapts
+    // to it (a real landrace effect), outperforming a fresh market seedling. Capped
+    // at +2 forgiveness (one generation earned every 2 replantings) so it augments
+    // good design rather than replacing the terrain-fit system entirely.
+    const landraceBonus = Math.min(2, Math.floor((entry.generation || 0) / 2));
+    const forgiveness = Math.min(mismatches, forgivingRoles.size + keyholeBonus + landraceBonus);
+    mismatches -= forgiveness;
+    // Pests are real damage, not a terrain-fit problem a guild role can excuse away —
+    // added after forgiveness is spent, and forced into its own label/icon so a
+    // player never reads an infested planting as merely "struggling" for terrain
+    // reasons when the real cause is pests.
+    if (entry.hasPests) mismatches += 2;
+    const label = entry.hasPests ? 'Pest outbreak' : mismatches === 0 ? 'Thriving here' : mismatches === 1 ? 'Getting by' : 'Struggling here';
+    const icon = entry.hasPests ? '🐛' : mismatches === 0 ? '🌱' : mismatches === 1 ? '🙂' : '😕';
+    // windSheltered/windExposed only mean anything for windSensitive plants — used by
+    // the UI to show a "sheltered by a nearby pioneer" vs "wants a windscreen" note.
+    const windExposedUnsheltered = !!plant.windSensitive && tile.windExposure === 'open' && !windOk;
+    const windSheltered = !!plant.windSensitive && tile.windExposure === 'open' && windOk;
+    return { mismatches, forgiveness, landraceBonus, activeRoles: Array.from(activeRoles), label, icon, windExposedUnsheltered, windSheltered, stage };
+  }
+
+  // A canopy tree casts shade on its 4 real orthogonal neighbors once it's actually
+  // *mature* — the mechanical form of the Principles board's "time stacking"
+  // (long-term canopy species eventually create the shade conditions understory/
+  // shade plants want) — "eventually" now means something, via the growth clock
+  // above, rather than firing the instant a sapling goes in the ground. Recomputed
+  // fully after any planting change or day advance rather than incrementally, since
+  // the grid is only 64 tiles — cheap enough not to need anything cleverer.
+  function recomputeCanopyShade() {
+    landPlot.tiles.forEach(t => { t.canopyShade = false; });
+    landPlot.tiles.forEach(t => {
+      const entry = t.plants.canopy;
+      if (!entry) return;
+      if (landGrowthStage(entry, LAND_PLANTS[entry.key].growthSpeed) !== 'mature') return;
+      [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+        const n = landTileAt(t.r + dr, t.c + dc);
+        if (n) n.canopyShade = true;
+      });
+    });
+  }
+
+  // Zone vitality (Aug 25 2026, growth-clock follow-up round) — the single plot-wide
+  // number the content draft's own open-items list flagged as the missing piece that
+  // would let "guild bonus"/"growth stage" mean more than an informational label, and
+  // the number future wildlife-attraction thresholds (Section 5 of the content draft,
+  // `minZoneVitality`) will eventually read. Built from two things, both already
+  // computed elsewhere in the game rather than invented fresh for this: `coverage`
+  // (how much of the plot is planted at all) and `quality` (how well what IS planted
+  // is doing — a blend of computePlantFit's mismatch count, the same LAND_GROWTH_FACTOR
+  // the visual overlay uses, and guild-role participation). Deliberately coverage-
+  // GATED, not just coverage-weighted: score = coverage * (floor + (1-floor)*quality).
+  // A flat weighted-sum version was tried first and rejected — it let a single
+  // perfectly-tended tile alone drag the whole 64-tile plot's score into "Thriving"
+  // territory, which is exactly backwards (one lush corner isn't a restored zone).
+  // Multiplying by coverage means near-zero coverage caps the score near zero
+  // regardless of how good that one tile is; the small `floor` just keeps a fully
+  // (if badly) planted plot from reading as literally 0% — an attempt across the
+  // whole plot counts for something even before anything's established.
+  const LAND_VITALITY_QUALITY_FLOOR = 0.15;
+  const LAND_VITALITY_TIERS = [
+    { max: 0.02, icon: '🟤', label: 'Bare ground', blurb: 'Barely anything has taken hold yet — most of the plot is still untouched ground.' },
+    { max: 0.20, icon: '🌱', label: 'Taking root', blurb: 'A few plantings are in, mostly still finding their feet.' },
+    { max: 0.45, icon: '🌿', label: 'Establishing', blurb: 'Plantings are spreading and settling into their spots.' },
+    { max: 0.70, icon: '🌳', label: 'Thriving', blurb: 'A real food forest is taking shape across the plot.' },
+    { max: 1.01, icon: '🌳✨', label: 'Flourishing', blurb: 'Dense, mature, guild-rich growth — this land is genuinely restored.' },
+  ];
+  function landVitalityTier(score) {
+    return LAND_VITALITY_TIERS.find(t => score <= t.max) || LAND_VITALITY_TIERS[LAND_VITALITY_TIERS.length - 1];
+  }
+  function computeZoneVitality() {
+    const tiles = landPlot.tiles;
+    let plantedTileCount = 0, layerCount = 0, fitSum = 0, growthSum = 0, guildLayerCount = 0;
+    tiles.forEach(tile => {
+      let tilePlanted = false;
+      LAND_LAYERS.forEach(layer => {
+        const entry = tile.plants[layer];
+        if (!entry) return;
+        tilePlanted = true;
+        layerCount++;
+        const fit = computePlantFit(tile, layer);
+        // mismatches run roughly 0-5 before forgiveness; 0 mismatches -> a full 1.0.
+        fitSum += Math.max(0, 1 - fit.mismatches / 3);
+        growthSum += LAND_GROWTH_FACTOR[fit.stage];
+        if (fit.activeRoles.length) guildLayerCount++;
+      });
+      if (tilePlanted) plantedTileCount++;
+    });
+    const coverage = tiles.length ? plantedTileCount / tiles.length : 0;
+    const avgFit = layerCount ? fitSum / layerCount : 0;
+    const avgGrowth = layerCount ? growthSum / layerCount : 0;
+    const guildShare = layerCount ? guildLayerCount / layerCount : 0;
+    // Design-layer investment folds into quality too, at a smaller weight than
+    // tending — "two layers, unified by one stat" (memory file's core-loop section),
+    // not two separate meters. Uses element *count* against plot size rather than
+    // per-tile fit, since elements are placed-once structures with no growth stage
+    // to weigh in the way a plant's maturity does.
+    const elementCount = tiles.filter(t => t.element).length;
+    const elementShare = tiles.length ? elementCount / tiles.length : 0;
+    // Quality weights: terrain fit matters most, maturity next, guild participation
+    // and design-layer investment smaller bonuses on top — mirrors how
+    // computePlantFit itself treats guild roles as a forgiving nudge rather than the
+    // primary signal.
+    const quality = avgFit * 0.45 + avgGrowth * 0.25 + guildShare * 0.15 + elementShare * 0.15;
+    const score = Math.max(0, Math.min(1, coverage * (LAND_VITALITY_QUALITY_FLOOR + (1 - LAND_VITALITY_QUALITY_FLOOR) * quality)));
+    return { score, coverage, avgFit, avgGrowth, guildShare, elementShare, elementCount, plantedTileCount, layerCount, tileCount: tiles.length };
+  }
+  function updateLandVitalityUI() {
+    const el = document.getElementById('land-vitality');
+    if (!el) return;
+    const v = computeZoneVitality();
+    const tier = landVitalityTier(v.score);
+    const pct = Math.round(v.score * 100);
+    // The truly-empty plot gets its own line rather than the generic tier blurb —
+    // "barely anything has taken hold" reads oddly next to "0/64 tiles planted."
+    const blurb = v.plantedTileCount === 0
+      ? 'Nothing planted yet — start a food-forest stack somewhere on the plot.'
+      : tier.blurb;
+    el.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="text-gold-300 font-medium">${tier.icon} Zone vitality</span>
+        <span class="text-stone-400 font-mono-stat">${pct}%</span>
+      </div>
+      <div class="land-vitality-bar-track"><div class="land-vitality-bar-fill" style="width:${pct}%"></div></div>
+      <div class="text-stone-400 mt-1">${tier.label} — ${v.plantedTileCount}/${v.tileCount} tiles planted. ${blurb}</div>
+    `;
+  }
+
+  // ---- Phase 1 wildlife (Aug 25 2026, zone-vitality wiring round) ----
+  // The payoff the content draft's Section 5 always specified for zone vitality:
+  // each creature gates on BOTH a minZoneVitality floor AND a real structural
+  // condition (a guild role present, a layer/maturity combination, an adjacency
+  // pattern) — vitality alone was never meant to be enough, so different planting
+  // choices draw genuinely different wildlife rather than one generic "good garden"
+  // meter unlocking everything at once. Phase 1 only, per the spec: a creature
+  // appears once, gets a one-line journal note, zero gameplay effect — Phase 2 hooks
+  // are designed in the content draft (real ecological roles, not arbitrary bonuses)
+  // but intentionally not wired to anything here yet.
+  //
+  // All 14 Tier 0-3 creatures from the content draft are wired as of Sept 12 2026.
+  // The original 9 (Aug 25) plus 5 that were deliberately left out at the time
+  // because their gates needed systems that didn't exist yet: a pest-event system
+  // (ladybird beetle, praying mantis — which itself depends on the ladybird), a
+  // placeable water element (dragonfly, Indian pond frog — need Pond/Banana Circle),
+  // and a sustained pest-balance stat (small Indian mongoose, approximated from real
+  // pest history rather than inventing a new stat — see its own check() comment).
+  // Both blockers (the land pest system, Section 4's placeable elements) are now
+  // built, so these 5 unlock real, already-specified content rather than new design
+  // work — see each creature's own entry below for its exact gate.
+  //
+  // One deliberate, documented substitution remains: the common tailorbird checks
+  // both the new Live Hedge/Windbreak element AND an established pioneer/nursePlant
+  // plant, since hasNearbyWindbreak() already treats both as the same real thing (a
+  // living windscreen) — not narrowing to just the new element once it existed.
+  function hasEstablishedRole(tile, role) {
+    return Object.values(tile.plants).some(e => {
+      if (!e) return false;
+      const p = LAND_PLANTS[e.key];
+      if (!(p.roles || []).includes(role)) return false;
+      return landGrowthStage(e, p.growthSpeed) !== 'seedling';
+    });
+  }
+  function landRealNeighbors(tile) {
+    return [[-1, 0], [1, 0], [0, -1], [0, 1]].map(([dr, dc]) => landTileAt(tile.r + dr, tile.c + dc)).filter(Boolean);
+  }
+  // minZoneVitality floors below were calibrated against computeZoneVitality()'s
+  // actual output, not guessed in isolation — a first pass used the same 0.02-0.55
+  // range as the tier boundaries in LAND_VITALITY_TIERS, then a quick simulation (a
+  // single well-fitted planting at increasing tile counts) showed that was far too
+  // strict: because vitality is deliberately COVERAGE-GATED (one tile can't spike a
+  // 64-tile plot's score, per computeZoneVitality's own design note), even a single
+  // solidly-established tile only scores ~0.008 — well under where a "common, early"
+  // Tier 0 creature needs to trigger. Tier 0 floors are now near-zero (the structural
+  // condition alone already does the real gating); Tier 1 needs roughly a handful of
+  // planted tiles (~0.03); Tier 2 needs real, developed coverage (~0.15, roughly
+  // 16-20 tiles well planted); Tier 3 needs substantial investment (~0.25) on top of
+  // its own already-demanding structural condition (a full mature 4-layer stack).
+  const LAND_CREATURES = [
+    {
+      key: 'honeybee', name: 'Indian honeybee', icon: '🐝', tier: 0, minZoneVitality: 0.005,
+      flavor: 'A honeybee works the flowers, unbothered by you watching.',
+      check: plot => plot.tiles.some(t => hasEstablishedRole(t, 'pollinatorAttractor')),
+    },
+    {
+      key: 'gardenLizard', name: 'Garden lizard', icon: '🦎', tier: 0, minZoneVitality: 0.005,
+      flavor: 'A garden lizard suns itself on a shaded patch of mulch.',
+      check: plot => plot.tiles.some(t => t.canopyShade || !!t.plants.groundcover),
+    },
+    {
+      key: 'squirrel', name: 'Five-striped palm squirrel', icon: '🐿️', tier: 0, minZoneVitality: 0.005,
+      flavor: 'A palm squirrel darts along a branch and vanishes into the leaves.',
+      check: plot => plot.tiles.some(t => !!t.plants.canopy || !!t.plants.shrub),
+    },
+    {
+      key: 'sunbird', name: 'Purple sunbird', icon: '🐦', tier: 1, minZoneVitality: 0.03,
+      flavor: 'A purple sunbird feeds at a cluster of flowers, wings a blur.',
+      check: plot => plot.tiles.some(t => hasEstablishedRole(t, 'pollinatorAttractor')
+        && landRealNeighbors(t).some(n => hasEstablishedRole(n, 'pollinatorAttractor'))),
+    },
+    {
+      key: 'tailorbird', name: 'Common tailorbird', icon: '🪹', tier: 1, minZoneVitality: 0.03,
+      flavor: 'A tailorbird ducks into cover near a stand of pioneer growth.',
+      // Real gate is a placed Live Hedge/Windbreak element, which now exists
+      // (Section 4) — checked here directly, alongside the original established
+      // pioneer/nursePlant proxy this shipped with before the element existed.
+      // Both stay valid: hasNearbyWindbreak() already treats a hedge and an
+      // established pioneer plant as the same real thing (a living windscreen),
+      // so this creature's gate matches that same unification rather than
+      // narrowing to just the new element and losing the honest original path.
+      check: plot => plot.tiles.some(t => {
+        if (t.element === 'hedge') return true;
+        return Object.values(t.plants).some(e => {
+          if (!e) return false;
+          const p = LAND_PLANTS[e.key];
+          if (!(p.pioneer || (p.roles || []).includes('nursePlant'))) return false;
+          return landGrowthStage(e, p.growthSpeed) !== 'seedling';
+        });
+      }),
+    },
+    {
+      key: 'limeButterfly', name: 'Common Mormon / Lime butterfly', icon: '🦋', tier: 1, minZoneVitality: 0.03,
+      flavor: 'A lime butterfly flutters low across a couple of tiles and is gone.',
+      check: plot => plot.tiles.some(t => Object.values(t.plants).some(e => e && ['amla', 'kadipatta', 'tulsi'].includes(e.key))),
+    },
+    {
+      key: 'coppersmithBarbet', name: 'Coppersmith barbet', icon: '🐦', tier: 2, minZoneVitality: 0.15,
+      flavor: 'A coppersmith barbet calls its steady metallic "tuk...tuk...tuk" from a fruiting tree.',
+      check: plot => plot.tiles.some(t => {
+        const e = t.plants.canopy;
+        return e && ['mango', 'jackfruit'].includes(e.key) && landGrowthStage(e, LAND_PLANTS[e.key].growthSpeed) === 'mature';
+      }),
+    },
+    {
+      key: 'hoopoe', name: 'Hoopoe', icon: '🐦', tier: 2, minZoneVitality: 0.15,
+      flavor: 'A hoopoe forages on open ground beneath the trees, crest flicking.',
+      check: plot => plot.tiles.some(t => {
+        if (!t.plants.groundcover) return false;
+        if (t.canopyShade) return true;
+        return landRealNeighbors(t).some(n => n.plants.canopy && landGrowthStage(n.plants.canopy, LAND_PLANTS[n.plants.canopy.key].growthSpeed) === 'mature');
+      }),
+    },
+    {
+      key: 'hornbill', name: 'Indian grey hornbill', icon: '🦅', tier: 3, minZoneVitality: 0.25,
+      flavor: 'A grey hornbill lands in the canopy — the unmistakable sign of a real, established food forest.',
+      // The spec's actual gate ("all four layers... sustained over multiple
+      // seasons") needs a season boundary the land screen doesn't have — only
+      // landDay exists. Approximated as "all four layers present on one tile AND
+      // all four already mature" — a real proxy for "this took genuine time to
+      // build," not an invented shortcut, but flagged plainly as an approximation
+      // rather than a literal implementation of "sustained over multiple seasons."
+      check: plot => plot.tiles.some(t => ['canopy', 'understory', 'shrub', 'groundcover'].every(l => {
+        const e = t.plants[l];
+        return e && landGrowthStage(e, LAND_PLANTS[e.key].growthSpeed) === 'mature';
+      })),
+    },
+    // ---- The 5 creatures unblocked by the pest system + placeable elements
+    // (Sept 12 2026 round) — the content draft's Section 5 table, now buildable
+    // without inventing a gate. Still Phase 1 sighting-only, same as the 9 above:
+    // no gameplay hooks wired, matching the "appears once, one journal line" spec.
+    {
+      key: 'ladybird', name: 'Ladybird beetle', icon: '🐞', tier: 0, minZoneVitality: 0.005,
+      flavor: 'A ladybird beetle patrols the leaves of a tile that once fought off pests.',
+      // Real gate per the content draft: "any zone that has had a pest event
+      // resolved." landPestEverResolved is set the first time clearLandPest()
+      // runs — a player-driven recovery, not a passive timer.
+      check: () => landPestEverResolved,
+    },
+    {
+      key: 'mantis', name: 'Praying mantis', icon: '🦗', tier: 1, minZoneVitality: 0.03,
+      flavor: 'A praying mantis waits motionless near where the ladybird was last seen.',
+      // The content draft frames this as "a light sequencing dependency, not a
+      // gate" — the mantis is meant to read as the next link up the same food
+      // chain, so it checks that the ladybird has already been sighted in this
+      // zone rather than re-deriving its own pest-recovery condition.
+      check: () => !!landSightings.ladybird,
+    },
+    {
+      key: 'dragonfly', name: 'Dragonfly', icon: '🌾', tier: 2, minZoneVitality: 0.15,
+      flavor: 'A dragonfly hovers low over the water, wings catching the light.',
+      check: plot => plot.tiles.some(t => t.element === 'pond' || t.element === 'bananacircle'),
+    },
+    {
+      key: 'pondFrog', name: 'Indian pond frog', icon: '🐸', tier: 2, minZoneVitality: 0.15,
+      flavor: 'An Indian pond frog calls from the water’s edge as dusk settles in.',
+      check: plot => plot.tiles.some(t => t.element === 'pond'),
+    },
+    {
+      key: 'mongoose', name: 'Small Indian mongoose', icon: '🐾', tier: 3, minZoneVitality: 0.25,
+      flavor: 'A mongoose slips through the undergrowth and is gone — a rare, unmistakable sign this land has stayed healthy for a long time.',
+      // The spec's real gate is "sustained high pest-balance over time" — no such
+      // stat exists, so this is built from the two pieces of pest history the
+      // system does track: the zone must have weathered at least one real
+      // outbreak (landLastPestDay set, not just "never got unlucky"), currently
+      // have zero active infestations anywhere, real established coverage
+      // (>=15 established plantings, matching this tier's own "substantial
+      // investment" framing), and at least 15 days pest-free since. A real,
+      // documented proxy for "sustained pest-balance," not an invented shortcut.
+      check: plot => {
+        if (landLastPestDay === null) return false;
+        const anyActivePest = plot.tiles.some(t => LAND_LAYERS.some(l => t.plants[l] && t.plants[l].hasPests));
+        if (anyActivePest) return false;
+        const established = plot.tiles.reduce((n, t) => n + LAND_LAYERS.filter(l => {
+          const e = t.plants[l];
+          return e && landGrowthStage(e, LAND_PLANTS[e.key].growthSpeed) !== 'seedling';
+        }).length, 0);
+        if (established < 15) return false;
+        return (landDay - landLastPestDay) >= 15;
+      },
+    },
+  ];
+
+  // Persisted, keyed by creature key — { firstSeenDay }. First-sighting-only, per
+  // the content draft's "one per creature's first sighting" journal spec; a creature
+  // never un-sights once earned, even if the qualifying planting is later removed.
+  let landSightings = {};
+  // Pest-history flags, purely to feed the ladybird/mongoose wildlife gates above —
+  // no gameplay effect of their own. landPestEverResolved: has the player ever
+  // cleared a land pest via the UI. landLastPestDay: the landDay an outbreak most
+  // recently infested something (persists even after that specific pest is cleared,
+  // so "days since last outbreak" keeps counting correctly).
+  let landPestEverResolved = false;
+  let landLastPestDay = null;
+
+  // ---- Land economy: coins, seed sovereignty, trust (Sept 12 2026) ----
+  // Two currencies, per the content draft's "seed sovereignty and trust, not just
+  // coin" section: coins from harvesting (selling), trust from giving surplus away
+  // instead — a real tradeoff, not two ways to get the same reward. landSeedBank
+  // tracks, per plant species, the highest lineage generation earned on THIS plot
+  // by harvesting and replanting your own seed — the landrace mechanic that lets a
+  // plot-adapted seed line slowly outperform a fresh market seedling (see the
+  // landraceBonus in computePlantFit). Reset on reroll (a new plot is genuinely
+  // different ground, per rerollLand's own existing plantings/elements reset logic)
+  // but coins/trust are the player's own resources and carry across a reroll.
+  let landCoins = 50;
+  let landTrust = 0;
+  let landSeedBank = {}; // { [plantKey]: highest generation banked }
+
+  // First-pass values, like every other magnitude in this project (flagged, not
+  // derived from playtesting): a real relative ordering — canopy/slow-growing
+  // species represent the most time and space invested, so they pay out the most —
+  // rather than one flat number for all 31 plants.
+  const LAND_LAYER_VALUE = { canopy: 25, understory: 18, shrub: 12, climber: 10, root: 8, groundcover: 6 };
+  const LAND_SPEED_MULT = { slow: 1.5, medium: 1.0, fast: 0.7 };
+  function landPlantValue(key) {
+    const plant = LAND_PLANTS[key];
+    return Math.round((LAND_LAYER_VALUE[plant.layer] || 8) * (LAND_SPEED_MULT[plant.growthSpeed] || 1));
+  }
+
+  // Harvest: sells a mature planting for coins and banks a seed generation for next
+  // time it's planted on this plot — a real "sell vs. save seeds" choice already
+  // flagged as confusing in playtesting (see the memory doc), now backed by an
+  // actual mechanic instead of just a tooltip. Generation bonus on the payout too
+  // (a landrace plant is worth slightly more, not just easier to grow) — capped the
+  // same way the fit bonus is, so it augments rather than dominates the base value.
+  function harvestLandPlant(index, layer) {
+    const tile = landPlot.tiles[index];
+    const entry = tile.plants[layer];
+    if (!entry) return;
+    const plant = LAND_PLANTS[entry.key];
+    if (landGrowthStage(entry, plant.growthSpeed) !== 'mature') return;
+    const generation = entry.generation || 0;
+    const coinsEarned = Math.round(landPlantValue(entry.key) * (1 + 0.1 * Math.min(generation, 5)));
+    landCoins += coinsEarned;
+    landSeedBank[entry.key] = Math.min(6, generation + 1);
+    removeLandPlant(index, layer);
+    return coinsEarned;
+  }
+
+  // Give away: the "Fair Share" half of the economy — surrenders the same mature
+  // planting for trust instead of coin. Deliberately does NOT advance the seed bank
+  // (the seed itself is given away, not saved) — a real tradeoff against harvesting,
+  // not a strictly-worse option, since trust is what the multiplayer village layer
+  // (task 6) is meant to spend on shared/village-facing benefits.
+  function giveLandPlantAway(index, layer) {
+    const tile = landPlot.tiles[index];
+    const entry = tile.plants[layer];
+    if (!entry) return;
+    const plant = LAND_PLANTS[entry.key];
+    if (landGrowthStage(entry, plant.growthSpeed) !== 'mature') return;
+    const trustEarned = Math.round(landPlantValue(entry.key) * 0.4);
+    landTrust += trustEarned;
+    removeLandPlant(index, layer);
+    return trustEarned;
+  }
+
+  function checkLandSightings() {
+    const vitality = computeZoneVitality();
+    LAND_CREATURES.forEach(c => {
+      if (landSightings[c.key]) return;
+      if (vitality.score < c.minZoneVitality) return;
+      if (!c.check(landPlot)) return;
+      landSightings[c.key] = { firstSeenDay: landDay };
+    });
+  }
+
+  function renderLandSightingsJournal() {
+    const el = document.getElementById('land-sightings');
+    if (!el) return;
+    const entries = Object.entries(landSightings)
+      .map(([key, sighting]) => ({ creature: LAND_CREATURES.find(c => c.key === key), sighting }))
+      .filter(e => e.creature)
+      .sort((a, b) => b.sighting.firstSeenDay - a.sighting.firstSeenDay); // reverse-chronological
+    if (!entries.length) {
+      el.innerHTML = '<span class="text-stone-500 text-[10px]">Nothing sighted yet — tend the land and see what shows up.</span>';
+      return;
+    }
+    el.innerHTML = entries.map(({ creature, sighting }) => `
+      <div class="land-sighting-entry${creature.tier >= 3 ? ' land-sighting-rare' : ''}">
+        <span class="land-sighting-icon">${creature.icon}</span>
+        <div class="land-sighting-body">
+          <div class="land-sighting-top">
+            <span class="land-sighting-name">${creature.name}</span>
+            <span class="land-sighting-day">Day ${sighting.firstSeenDay}</span>
+          </div>
+          <div class="land-sighting-flavor">${creature.flavor}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Plantings live separately from the seeded terrain (generateLandPlot stays a
+  // pure function of its seed, so the determinism check on it keeps meaning what it
+  // says) — landPlantings is the persisted source of truth, keyed by tile index;
+  // applyLandPlantings stamps it onto a freshly-generated landPlot.tiles.
+  let landPlantings = {};
+  function applyLandPlantings() {
+    landPlot.tiles.forEach((tile, i) => { tile.plants = landPlantings[i] ? { ...landPlantings[i] } : {}; });
+  }
+
+  // ================= LAND ELEMENTS — the design layer =================
+  // Content draft Section 4: placed once, not tended, passively affecting a radius —
+  // a genuinely different verb from the tending-layer plants above (memory file's
+  // core-loop section). One element per tile (`tile.element`), separate from the
+  // per-layer plant stack. Costs are explicit first-pass placeholders per the doc's
+  // own note ("Costs/radii below are first-pass placeholders for balance at build
+  // time") — real coin deduction lands with the land economy pass; for now placing
+  // one is free so the mechanic can be evaluated on its own before it's gated by a
+  // currency that doesn't exist on this screen yet.
+  const LAND_ELEMENTS = {
+    swale: {
+      name: 'Swale / Trench', icon: '〰️', cost: 40,
+      short: 'Flattens local flow; raises moisture downhill of it.',
+      // "Requires a 2+ tile run with an elevation drop" — simplified to a single-tile
+      // placement check: some real downhill neighbor to actually drain toward.
+      eligible: (tile) => [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dr, dc]) => {
+        const n = landTileAt(tile.r + dr, tile.c + dc);
+        return n && n.elevation < tile.elevation;
+      }),
+    },
+    checkdam: {
+      name: 'Check Dam / Gully Plug', icon: '🧱', cost: 50,
+      short: 'Blocks a flow channel; raises moisture upstream of it.',
+      // The doc's own placement rule, now a literal checkable condition per the
+      // Section 4 cross-reference note: a real confluence tile.
+      eligible: (tile) => tile.flowAccum >= 3,
+    },
+    terracing: {
+      name: 'Terracing', icon: '🪜', cost: 60,
+      short: 'Steps a slope flat — removes its elevation penalty here.',
+      eligible: (tile) => tile.elevation >= 1 && !tile.terraced,
+    },
+    hedge: {
+      name: 'Live Hedge / Windbreak', icon: '🌾', cost: 35,
+      short: 'Shelters neighboring tiles from wind, like an established pioneer plant.',
+      eligible: () => true,
+    },
+    keyhole: {
+      name: 'Keyhole Bed', icon: '🗝️', cost: 25,
+      short: 'Small footprint, strong edge-effect — more forgiving of a rough terrain match.',
+      eligible: () => true,
+    },
+    herbspiral: {
+      name: 'Herb Spiral', icon: '🌀', cost: 30,
+      short: 'Several sun/moisture microzones in one footprint.',
+      eligible: () => true,
+    },
+    bananacircle: {
+      name: 'Banana Circle', icon: '🍌', cost: 45,
+      short: 'A moisture-rich sink that boosts a ring of surrounding tiles.',
+      eligible: (tile) => tile.elevation <= 1 || tile.moistureProfile !== 'dry',
+    },
+    pond: {
+      name: 'Pond', icon: '💧', cost: 70,
+      short: 'Strong vitality boost; a dedicated wildlife draw; supports thirsty plants.',
+      eligible: (tile) => tile.elevation <= 1,
+    },
+    nursery: {
+      name: 'Nursery', icon: '🌱', cost: 30,
+      short: 'A home for saved seed lines between plantings (seed-sovereignty economy, coming next).',
+      eligible: () => true,
+    },
+  };
+
+  // Elements persist the same way plantings do — keyed by tile index, stamped onto
+  // a freshly-generated plot rather than folded into generateLandPlot's own pure
+  // seed function.
+  let landElements = {};
+  function applyLandElements() {
+    landPlot.tiles.forEach((tile, i) => {
+      const key = landElements[i];
+      tile.element = key || null;
+      tile.terraced = key === 'terracing';
+    });
+  }
+
+  function regenerateLandPlot(seed) {
+    landPlot = generateLandPlot(seed);
+    applyLandPlantings();
+    applyLandElements();
+    recomputeWaterFlow(landPlot.tiles); // element moisture overrides need tiles+elements both in place first
+    recomputeCanopyShade();
+  }
+
+  // Earth-tone ordinal ramp for elevation — one hue, monotone lightness, validated
+  // with the data-viz skill's palette validator against this screen's actual dark
+  // surface (#12210f): passes at 2.22:1 opaque / 2.11:1 at the render alpha below,
+  // adjacent steps ≥0.06 apart in lightness, single hue spread 13°. Deliberately NOT
+  // blue (the skill's own default sequential hue) — a blue low tier reads as a
+  // literal water body, which is exactly the confusion to design out. Per-tile icons
+  // (including a wave for low ground and a snow peak for the ridge) are gone too —
+  // this is a homestead plot, not an ocean-and-mountain landscape, and 64 icons on
+  // one grid was clutter besides. Color now carries the difference; the legend below
+  // explains the color. See updateLandLegend() for the key.
+  const LAND_ELEV_HEX = ['#6b4f2c', '#8a6a3a', '#b08c50', '#dcc088']; // streambed → ridge
+  const LAND_ELEV_ALPHA = 0.94; // near-opaque — translucent low-alpha tints were too
+                                 // close to the dark surface to read as distinct once
+                                 // blended, re-validated at this alpha (2.11:1).
+
+  // Two-tone modes: each a contrast-checked pair (WCAG-style ratio vs #12210f, both
+  // as opaque hex and blended at LAND_TWOTONE_ALPHA), not derived from the elevation
+  // hue — these encode a genuinely binary fact (duration / exposure), not a tier.
+  const LAND_TWOTONE_HEX = {
+    daylight: { full: '#b78b3a', short: '#395476' },
+    wind: { open: '#83969d', sheltered: '#38563d' },
+  };
+  const LAND_TWOTONE_ALPHA = 0.9;
+
+  // Water is a genuine 3-tier ordinal ramp now (recomputeWaterFlow), not a binary
+  // fact, so it gets the same sequential-ramp treatment as elevation rather than a
+  // two-tone pair. Blue, deliberately unlike elevation (which avoided blue so a low
+  // tile wouldn't read as a literal water body) — this view mode IS about water, so
+  // blue is the honest, unambiguous choice here. One hue, monotone lightness,
+  // runoff(wettest)→dry(driest) matching LAND_ELEV_HEX's dark-to-light convention.
+  // Validated with the dataviz skill's ordinal check against this screen's actual
+  // dark surface (#12210f): light end clears contrast at 2.50:1, adjacent steps
+  // ≥0.06 OKLCH lightness apart, single hue (28° spread).
+  const LAND_WATER_HEX = { runoff: '#2f5f8a', moist: '#5c8aab', dry: '#a3b8bf' };
+  const LAND_WATER_ORDER = ['runoff', 'moist', 'dry'];
+
+  function hexToRgba(hex, alpha) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+  }
+
+  // Translucent tints, not solid fills — the shared dither texture on .land-grid-parcel
+  // shows through, which is what keeps the pattern continuous across tile boundaries
+  // instead of resetting at every seam.
+  function landTileColor(tile) {
+    if (landViewMode === 'elevation') return hexToRgba(LAND_ELEV_HEX[tile.elevation], LAND_ELEV_ALPHA);
+    if (landViewMode === 'daylight') return hexToRgba(tile.sunDuration === 'full' ? LAND_TWOTONE_HEX.daylight.full : LAND_TWOTONE_HEX.daylight.short, LAND_TWOTONE_ALPHA);
+    if (landViewMode === 'wind') return hexToRgba(tile.windExposure === 'open' ? LAND_TWOTONE_HEX.wind.open : LAND_TWOTONE_HEX.wind.sheltered, LAND_TWOTONE_ALPHA);
+    return hexToRgba(LAND_WATER_HEX[tile.moistureProfile], LAND_TWOTONE_ALPHA); // 'water'
+  }
+
+  // Auto-tiling: the land's physical shape (elevation) doesn't change when you switch
+  // view modes — only the color overlay does, the same way a topo map and a rainfall
+  // map show the same mountains. So cliff edges are always computed from elevation
+  // alone, regardless of which view is selected. A lip is drawn once per boundary, on
+  // the higher tile's side facing the lower one — same logic a real 2D tile engine
+  // uses for cliff faces, and it's driven by the same elevation data the terrain
+  // generator produced, not decoration.
+  function landTileAt(r, c) {
+    if (r < 0 || r >= LAND_ROWS || c < 0 || c >= LAND_COLS) return null;
+    return landPlot.tiles[r * LAND_COLS + c];
+  }
+
+  function computeCliffEdges(tile) {
+    const dirs = [
+      { side: 'top', dr: -1, dc: 0 },
+      { side: 'bottom', dr: 1, dc: 0 },
+      { side: 'left', dr: 0, dc: -1 },
+      { side: 'right', dr: 0, dc: 1 },
+    ];
+    const edges = [];
+    dirs.forEach(d => {
+      const n = landTileAt(tile.r + d.dr, tile.c + d.dc);
+      if (!n) return; // plot boundary — the outer frame already marks this
+      const diff = tile.elevation - n.elevation;
+      if (diff > 0) edges.push({ side: d.side, diff });
+    });
+    return edges;
+  }
+
+  // Builds a color key, not a text caption — a gradient bar with tier numbers for the
+  // ordinal elevation mode, a two-swatch key for the binary modes. No water-body or
+  // mountain-peak icons here either — "runoff" / "dries out faster" say the same
+  // thing in words a homestead plot actually means.
+  // Plain text, not icons — a wave glyph here would repeat exactly the "looks like
+  // literal standing water on a homestead plot" confusion AV flagged and this project
+  // already banned everywhere else (see the bannedGlyphCheck in test_land.js, which
+  // deliberately checks every view mode, not just the base one).
+  const LAND_WATER_SEG_LABEL = { runoff: 'Wet', moist: 'Moist', dry: 'Dry' };
+  function updateLandLegend() {
+    const el = document.getElementById('land-legend');
+    if (landViewMode === 'elevation') {
+      const segs = LAND_ELEV_HEX.map((hex, i) => `<div class="land-legend-seg" style="background:${hex};">${i}</div>`).join('');
+      el.innerHTML = `
+        <div class="land-legend-gradient">${segs}</div>
+        <div class="land-legend-endcaps"><span>Low ground · wetter</span><span>Ridge · drier</span></div>
+      `;
+      return;
+    }
+    if (landViewMode === 'water') {
+      // A real 3-tier ordinal ramp now (recomputeWaterFlow), so it gets the same
+      // gradient-bar legend treatment as elevation instead of a two-row swatch list —
+      // consistent with the dataviz skill's "sequential value gets a gradient key"
+      // rule, now that water genuinely has an order (runoff → moist → dry) rather
+      // than being a flat binary fact.
+      const segs = LAND_WATER_ORDER.map(k => `<div class="land-legend-seg" style="background:${LAND_WATER_HEX[k]};">${LAND_WATER_SEG_LABEL[k]}</div>`).join('');
+      el.innerHTML = `
+        <div class="land-legend-gradient">${segs}</div>
+        <div class="land-legend-endcaps"><span>Runoff · wettest</span><span>Dry · driest</span></div>
+      `;
+      return;
+    }
+    const rows = {
+      daylight: [
+        { hex: LAND_TWOTONE_HEX.daylight.full, label: '☀️ Full daylight hours' },
+        { hex: LAND_TWOTONE_HEX.daylight.short, label: '🌥️ Shortened — shaded part of the day' },
+      ],
+      wind: [
+        { hex: LAND_TWOTONE_HEX.wind.open, label: `🌬️ Open to the ${WIND_FULL[landPlot.prevailingWind]} wind` },
+        { hex: LAND_TWOTONE_HEX.wind.sheltered, label: '🍃 Sheltered interior' },
+      ],
+    }[landViewMode];
+    el.innerHTML = `<div class="land-legend-rows">${rows.map(r => `<div class="land-legend-row"><span class="land-legend-swatch" style="background:${r.hex};"></span>${r.label}</div>`).join('')}</div>`;
+  }
+
+  // The plot's aspect (and prevailing wind) are fixed, whole-plot compass facts, not
+  // something that varies tile to tile — shown once here rather than repeated on every
+  // tile tap. This is the direction indicator itself.
+  function updateLandAspectBanner() {
+    const info = ASPECT_INFO[landPlot.aspect];
+    document.getElementById('land-aspect-banner').innerHTML = `
+      <div class="font-bold text-gold-300 mb-0.5">${info.icon} ${info.label} plot</div>
+      <div class="text-stone-300">${info.blurb}</div>
+      <div class="text-stone-500 mt-1">🌬️ Prevailing wind blows in from the ${WIND_FULL[landPlot.prevailingWind]}.</div>
+    `;
+  }
+
+  function describeLandTile(tile) {
+    const elevLabel = ['Streambed — the lowest ground on the plot', 'Low ground', 'Mid-slope', 'Ridge — the highest ground on the plot'][tile.elevation];
+    const daylightLabel = tile.sunDuration === 'full'
+      ? 'gets full daylight hours — nothing blocks the sky here'
+      : 'gets shortened daylight hours — the surrounding higher ground shades it for part of the day';
+    const windLabel = tile.windExposure === 'open'
+      ? `open to the prevailing ${WIND_FULL[landPlot.prevailingWind]} wind`
+      : 'sheltered from the prevailing wind';
+    // Three real tiers now (recomputeWaterFlow), not a binary elevation lookup — a
+    // tile's actual position in the slope's flow pattern, not just its own tier.
+    const waterNote = tile.moistureProfile === 'runoff'
+      ? `Real drainage collects here${tile.flowAccum > 3 ? ' — a genuine confluence point, wetter than its elevation alone would suggest' : ''} — good for water-loving plants, less ideal for anything that wants dry feet.`
+      : tile.moistureProfile === 'moist'
+      ? 'Holds a moderate, steady moisture level — neither the wettest nor the driest ground on the plot.'
+      : 'Dries out faster than the wetter ground nearby — better suited to hardy, drought-tolerant planting (the "Bund" zone).';
+    return `<div class="font-bold text-gold-300 mb-1">Tier ${tile.elevation} · ${elevLabel}</div>
+      <div class="text-stone-300 mb-1">${daylightLabel}, ${windLabel}.</div>
+      <div class="text-stone-400">${waterNote}</div>`;
+  }
+
+  function renderLandGrid() {
+    const gridEl = document.getElementById('land-grid');
+    gridEl.style.gridTemplateColumns = `repeat(${LAND_COLS}, minmax(0, 1fr))`;
+    gridEl.innerHTML = '';
+    landPlot.tiles.forEach((tile, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'land-tile';
+      cell.style.background = landTileColor(tile);
+      if (i === selectedLandTile) cell.style.boxShadow = 'inset 0 0 0 3px #34d399';
+      cell.onclick = () => showLandTileInfo(i);
+
+      // Cliff lips (elevation-driven, constant across view modes) are the only thing
+      // drawn on top of the tile fill now — no per-tile icon. With 64 tiles on
+      // screen, one glyph per tile was clutter, and color + the legend key say the
+      // same thing without it.
+      const edgeHtml = computeCliffEdges(tile).map(e => {
+        const w = e.diff >= 2 ? '7px' : '4px';
+        return `<div class="cliff-edge cliff-${e.side}" style="--w:${w};"></div>`;
+      }).join('');
+      cell.innerHTML = edgeHtml + landGrowthOverlayHtml(tile);
+      gridEl.appendChild(cell);
+    });
+    document.getElementById('land-seed-label').innerText = landPlot.seed;
+    document.getElementById('land-day-label').innerText = landDay;
+    document.getElementById('land-coins-label').innerText = landCoins;
+    document.getElementById('land-trust-label').innerText = landTrust;
+    updateLandLegend();
+    updateLandAspectBanner();
+    updateLandVitalityUI();
+    checkLandSightings();
+    renderLandSightingsJournal();
+  }
+
+  // Terra Nil-style growth visual (replaces the old flat "planted" dot, Aug 25 2026):
+  // each occupied layer draws one soft green blob, sized by how mature it is — a
+  // same-day seedling is a faint speck, a mature canopy tree is a broad wash that
+  // dominates the tile. Blob position is deterministic from tile+layer (not random),
+  // so it's stable across re-renders and consistent with the rest of the game's
+  // seeded-generation approach rather than jittering every repaint. Layered directly
+  // over whichever view-mode color is showing, in every mode — vegetation is a fact
+  // about the tile, not something a data lens should hide.
+  const LAND_LAYER_VISUAL_WEIGHT = { canopy: 34, understory: 28, shrub: 22, groundcover: 16, climber: 18, root: 12 };
+
+  // The single most visually-dominant occupied layer on a tile (by the same weight
+  // table the blobs use) — the one plant whose identity actually gets an icon.
+  // Deliberately not "one icon per layer": AV flagged the earlier per-tile terrain
+  // icons as clutter across a 64-tile grid, and 6 icons stacked on one tile would
+  // reintroduce exactly that, just for plants instead of terrain. A tile's full
+  // multi-layer contents are still fully readable in the tile-info stack panel below.
+  function landDominantLayer(tile) {
+    let best = null, bestWeight = -1;
+    LAND_LAYERS.forEach(layer => {
+      if (!tile.plants[layer]) return;
+      if (LAND_LAYER_VISUAL_WEIGHT[layer] > bestWeight) { bestWeight = LAND_LAYER_VISUAL_WEIGHT[layer]; best = layer; }
+    });
+    return best;
+  }
+
+  function landGrowthOverlayHtml(tile) {
+    const dominant = landDominantLayer(tile);
+    return LAND_LAYERS.map((layer, layerIdx) => {
+      const entry = tile.plants[layer];
+      if (!entry) return '';
+      const plant = LAND_PLANTS[entry.key];
+      const stage = landGrowthStage(entry, plant.growthSpeed);
+      const factor = LAND_GROWTH_FACTOR[stage];
+      const size = Math.max(4, Math.round(LAND_LAYER_VISUAL_WEIGHT[layer] * factor));
+      const seedX = (tile.r * 13 + tile.c * 7 + layerIdx * 5) % 10;
+      const seedY = (tile.r * 7 + tile.c * 11 + layerIdx * 3) % 10;
+      const leftPct = (14 + seedX * 7.2).toFixed(1);
+      const topPct = (14 + seedY * 7.2).toFixed(1);
+      const alpha = (0.16 + factor * 0.52).toFixed(2);
+      const alphaEdge = (alpha * 0.55).toFixed(2);
+      let html = `<span class="land-growth-blob" style="width:${size}px; height:${size}px; left:${leftPct}%; top:${topPct}%; background: radial-gradient(circle, rgba(94,178,94,${alpha}) 0%, rgba(52,120,58,${alphaEdge}) 65%, rgba(52,120,58,0) 100%);"></span>`;
+      // The one identity icon this tile gets, riding on its own blob so it reads as
+      // "part of" the greenery rather than a separate marker. Floors at 55% opacity
+      // and ~11px even for a same-day seedling — the point is you can always tell
+      // what's growing here, only the growth blob itself is meant to start faint.
+      if (layer === dominant) {
+        const iconSize = (11 + factor * 5).toFixed(1);
+        const iconOpacity = (0.55 + factor * 0.45).toFixed(2);
+        html += `<span class="land-growth-icon" style="left:${leftPct}%; top:${topPct}%; font-size:${iconSize}px; opacity:${iconOpacity};">${plant.icon}</span>`;
+      }
+      // A tile-corner pest badge — scannable across the whole 64-tile grid at a
+      // glance, same purpose as the balcony game's pulsing rose border on an
+      // infested cell, just sized for a much smaller tile here.
+      if (entry.hasPests) html += `<span class="land-pest-badge">🐛</span>`;
+      return html;
+    }).join('');
+  }
+
+  // Builds the terrain read-out (unchanged) plus the new plant-stack panel: one row
+  // per layer slot, occupied slots showing what's planted and its live fit against
+  // this tile's real terrain + guild neighbors, empty slots offering to plant.
+  // Growth-speed/pioneer/wind badges shared by the tile-info stack rows and the
+  // picker sheet — see the pioneer-species build note (memory file) for sourcing.
+  const GROWTH_SPEED_INFO = { fast: { icon: '⚡', label: 'Fast' }, medium: { icon: '🌿', label: 'Medium' }, slow: { icon: '🌳', label: 'Slow' } };
+  function landPlantMetaHtml(plant, fit) {
+    const speed = GROWTH_SPEED_INFO[plant.growthSpeed];
+    const tags = [];
+    if (speed) tags.push(`<span class="land-plant-tag">${speed.icon} ${speed.label}</span>`);
+    if (plant.pioneer) tags.push(`<span class="land-plant-tag land-plant-tag-pioneer">🛡️ Pioneer / windscreen</span>`);
+    if (plant.windSensitive) {
+      if (fit && fit.windSheltered) tags.push(`<span class="land-plant-tag land-plant-tag-sheltered">🌬️ Sheltered by a pioneer nearby</span>`);
+      else if (fit && fit.windExposedUnsheltered) tags.push(`<span class="land-plant-tag land-plant-tag-exposed">🌬️ Exposed — wants a windscreen nearby</span>`);
+      else tags.push(`<span class="land-plant-tag">🌬️ Wind-sensitive while young</span>`);
+    }
+    return tags.join('');
+  }
+
+  const LAND_STAGE_INFO = {
+    seedling: { icon: '🌱', label: 'Seedling' },
+    establishing: { icon: '🌿', label: 'Establishing' },
+    mature: { icon: '🌳', label: 'Mature' },
+  };
+
+  function renderLandTileInfo(index) {
+    const tile = landPlot.tiles[index];
+    const stackHtml = LAND_LAYERS.map(layer => {
+      const entry = tile.plants[layer];
+      if (!entry) {
+        const info = LAND_LAYER_INFO[layer];
+        return `<button class="land-plant-add" onclick="openLandPlantPicker(${index}, '${layer}')">+ ${info.icon} ${info.label}</button>`;
+      }
+      const plant = LAND_PLANTS[entry.key];
+      const fit = computePlantFit(tile, layer);
+      const stageInfo = LAND_STAGE_INFO[fit.stage];
+      // Days-to-next-stage hint — only shown while still growing, since "mature" has
+      // nowhere further to go (no growth clock decay/succession yet, see the pioneer
+      // build note on that still being open).
+      const th = LAND_GROWTH_THRESHOLDS[plant.growthSpeed] || LAND_GROWTH_THRESHOLDS.medium;
+      const age = landDay - entry.plantedOn;
+      const daysToNext = fit.stage === 'seedling' ? th[0] - age : fit.stage === 'establishing' ? th[1] - age : 0;
+      const stageNote = daysToNext > 0 ? ` · ${daysToNext} day${daysToNext === 1 ? '' : 's'} to next stage` : '';
+      const roleNote = fit.activeRoles.length
+        ? `<div class="land-plant-row-roles">${fit.activeRoles.map(r => LAND_GUILD_ROLE_INFO[r].label).join(' · ')}</div>`
+        : '';
+      // Seed-sovereignty tag — only shown once a lineage actually exists (gen 0 is
+      // just "a plant," not worth a badge every single row).
+      const generationNote = entry.generation
+        ? `<div class="land-plant-row-roles" style="color:#fbbf24;">🌾 Gen ${entry.generation} lineage${fit.landraceBonus ? ` (+${fit.landraceBonus} fit)` : ''}</div>`
+        : '';
+      // A pest-infested entry gets its own clear action, right next to remove —
+      // adapted from the balcony game's "tap an infested tile to clear it" pattern,
+      // now scoped to one layer on one tile rather than a whole 4x4 cell.
+      const pestClearBtn = entry.hasPests
+        ? `<button class="land-plant-row-remove" onclick="clearLandPest(${index}, '${layer}')" title="Clear pests" style="color:#fca5a5;">🧴</button>`
+        : '';
+      // Harvest (coins) / Give away (trust) — the economy's real tradeoff, only
+      // offered once a planting is actually mature (nothing to sell or gift off a
+      // seedling). Removing an immature planting still uses the plain ✕ below.
+      const economyBtns = fit.stage === 'mature' && !entry.hasPests
+        ? `<div class="land-plant-row-economy">
+            <button class="land-economy-btn" onclick="harvestLandPlant(${index}, '${layer}')" title="Harvest for coins">🪙 ${landPlantValue(entry.key)}+</button>
+            <button class="land-economy-btn land-economy-btn-trust" onclick="giveLandPlantAway(${index}, '${layer}')" title="Give away for trust">🤝 ${Math.round(landPlantValue(entry.key) * 0.4)}</button>
+          </div>`
+        : '';
+      return `<div class="land-plant-row${entry.hasPests ? ' land-plant-row-pested' : ''}">
+        <span class="land-plant-row-icon">${plant.icon}</span>
+        <div class="land-plant-row-main">
+          <div class="land-plant-row-top"><span class="land-plant-row-name">${plant.name}</span><span class="land-plant-row-fit">${fit.icon} ${fit.label}</span></div>
+          <div class="land-plant-row-stage">${stageInfo.icon} ${stageInfo.label}${stageNote}</div>
+          <div class="land-plant-row-tags">${landPlantMetaHtml(plant, fit)}</div>
+          ${roleNote}
+          ${generationNote}
+          ${economyBtns}
+        </div>
+        ${pestClearBtn}
+        <button class="land-plant-row-remove" onclick="removeLandPlant(${index}, '${layer}')" title="Remove">✕</button>
+      </div>`;
+    }).join('');
+    // Design-layer row — one element per tile, rendered the same way as a plant-
+    // stack row (occupied: show it + remove; empty: an add button), but visually
+    // distinct (land-element-row) since it's a structure, not something growing.
+    let elementHtml;
+    if (tile.element) {
+      const el = LAND_ELEMENTS[tile.element];
+      elementHtml = `<div class="land-element-row">
+        <span class="land-plant-row-icon">${el.icon}</span>
+        <div class="land-plant-row-main">
+          <div class="land-plant-row-top"><span class="land-plant-row-name">${el.name}</span></div>
+          <div class="land-plant-row-stage">${el.short}</div>
+        </div>
+        <button class="land-plant-row-remove" onclick="removeLandElement(${index})" title="Remove">✕</button>
+      </div>`;
+    } else {
+      elementHtml = `<button class="land-plant-add" onclick="openLandElementPicker(${index})">+ 🏔️ Place a design element</button>`;
+    }
+    document.getElementById('land-tile-info').innerHTML = `
+      ${describeLandTile(tile)}
+      <div class="land-plant-stack">${stackHtml}${elementHtml}</div>
+    `;
+  }
+
+  function showLandTileInfo(index) {
+    selectedLandTile = index;
+    renderLandTileInfo(index);
+    renderLandGrid();
+  }
+
+  // ---- Plant picker (choose what to place in one empty layer slot) ----
+  function openLandPlantPicker(index, layer) {
+    const tile = landPlot.tiles[index];
+    const options = Object.entries(LAND_PLANTS).filter(([, p]) => p.layer === layer);
+    const rows = options.map(([key, plant]) => {
+      // Preview the fit this plant would have if placed here TODAY (a fresh
+      // seedling), without touching real state — lets a player choose with the same
+      // honest terrain feedback they'd see after planting, not a blind guess.
+      const previewEntry = { key, plantedOn: landDay };
+      const previewTile = { ...tile, plants: { ...tile.plants, [layer]: previewEntry } };
+      const fit = computePlantFit(previewTile, layer);
+      return `<button class="land-picker-option" onclick="placeLandPlant(${index}, '${layer}', '${key}')">
+        <span class="land-picker-icon">${plant.icon}</span>
+        <span class="land-picker-name-wrap">
+          <span class="land-picker-name">${plant.name}</span>
+          <span class="land-picker-tags">${landPlantMetaHtml(plant, fit)}</span>
+        </span>
+        <span class="land-picker-fit" title="${fit.label}">${fit.icon}</span>
+      </button>`;
+    }).join('');
+    const layerLabel = LAND_LAYER_INFO[layer].label.toLowerCase();
+    const article = /^[aeiou]/.test(layerLabel) ? 'an' : 'a';
+    document.getElementById('land-plant-picker-title').innerText = `Choose ${article} ${layerLabel} plant`;
+    document.getElementById('land-plant-picker-list').innerHTML = rows || '<span class="text-stone-500 text-[10px]">Nothing in this layer yet.</span>';
+    document.getElementById('land-plant-picker').classList.remove('hidden');
+  }
+
+  function closeLandPlantPicker() {
+    document.getElementById('land-plant-picker').classList.add('hidden');
+  }
+
+  function placeLandPlant(index, layer, key) {
+    // Automatically plants from this plot's own seed bank when one exists for this
+    // species — the honest default per the seed-sovereignty design (a player who's
+    // harvested this species here before is continuing that lineage, not starting a
+    // fresh market seedling) rather than a separate market-vs-bank picker choice.
+    const entry = { key, plantedOn: landDay, generation: landSeedBank[key] || 0 };
+    landPlot.tiles[index].plants[layer] = entry;
+    landPlantings[index] = { ...(landPlantings[index] || {}), [layer]: entry };
+    closeLandPlantPicker();
+    recomputeCanopyShade();
+    renderLandTileInfo(index);
+    renderLandGrid();
+    saveGame();
+  }
+
+  function removeLandPlant(index, layer) {
+    delete landPlot.tiles[index].plants[layer];
+    if (landPlantings[index]) {
+      delete landPlantings[index][layer];
+      if (Object.keys(landPlantings[index]).length === 0) delete landPlantings[index];
+    }
+    recomputeCanopyShade();
+    renderLandTileInfo(index);
+    renderLandGrid();
+    saveGame();
+  }
+
+  // ---- Element picker (choose what design-layer element to place on one tile) ----
+  function openLandElementPicker(index) {
+    const tile = landPlot.tiles[index];
+    const rows = Object.entries(LAND_ELEMENTS).map(([key, el]) => {
+      const ok = el.eligible(tile);
+      return `<button class="land-picker-option" ${ok ? `onclick="placeLandElement(${index}, '${key}')"` : 'disabled style="opacity:0.4;cursor:not-allowed;"'}>
+        <span class="land-picker-icon">${el.icon}</span>
+        <span class="land-picker-name-wrap">
+          <span class="land-picker-name">${el.name} <span class="text-stone-500 font-normal">(🪙${el.cost})</span></span>
+          <span class="land-picker-tags"><span class="land-plant-tag">${el.short}</span></span>
+        </span>
+        <span class="land-picker-fit" title="${ok ? 'Can place here' : 'Not eligible on this tile'}">${ok ? '✅' : '🚫'}</span>
+      </button>`;
+    }).join('');
+    document.getElementById('land-plant-picker-title').innerText = 'Choose a design element';
+    document.getElementById('land-plant-picker-list').innerHTML = rows;
+    document.getElementById('land-plant-picker').classList.remove('hidden');
+  }
+
+  function placeLandElement(index, key) {
+    landElements[index] = key;
+    applyLandElements();
+    recomputeWaterFlow(landPlot.tiles);
+    recomputeCanopyShade();
+    closeLandPlantPicker();
+    renderLandTileInfo(index);
+    renderLandGrid();
+    saveGame();
+  }
+
+  function removeLandElement(index) {
+    delete landElements[index];
+    applyLandElements();
+    recomputeWaterFlow(landPlot.tiles);
+    recomputeCanopyShade();
+    renderLandTileInfo(index);
+    renderLandGrid();
+    saveGame();
+  }
+
+  // The land screen's own time control — advances landDay, recomputes everything
+  // that depends on growth stage (canopy shade, pioneer windbreak eligibility), and
+  // re-renders. Deliberately separate from the balcony game's `day`/`advanceDay()` —
+  // the land screen has no tending actions to drive it implicitly yet.
+  function advanceLandDay() {
+    landDay += 1;
+    recomputeCanopyShade();
+    // Water flow is now genuinely perturbed by placed elements (swale/check dam/
+    // terracing/pond/banana circle — see LAND_ELEMENTS), so this day-tick call is a
+    // real recompute, not the no-op it was before elements existed.
+    recomputeWaterFlow(landPlot.tiles);
+    triggerLandPestOutbreak();
+    renderLandGrid();
+    if (selectedLandTile !== null) renderLandTileInfo(selectedLandTile);
+    saveGame();
+  }
+
+  // ================= LAND PESTS =================
+  // Adapted from the balcony game's own outbreak logic (pest OUTBREAK handling,
+  // aphid infestation, organic-spray clearing) per the end-of-session flag naming
+  // this a direct, already-designed unlock rather than fresh design work. Targets
+  // one real planted entry per day-tick, not a whole tile — a land tile's several
+  // stacked layers can each be hit independently, matching how differently a real
+  // food-forest's canopy and groundcover experience pest pressure.
+  //
+  // Chance scales gently with how much is actually established (more real plant
+  // matter, more real pest pressure) rather than land-day count directly — the land
+  // screen has no season/difficulty-curve concept to hang a day-based ramp off yet.
+  function getLandPestChance() {
+    const established = landPlot.tiles.reduce((n, t) => n + LAND_LAYERS.filter(l => {
+      const e = t.plants[l];
+      return e && landGrowthStage(e, LAND_PLANTS[e.key].growthSpeed) !== 'seedling';
+    }).length, 0);
+    // Caps at a real ceiling so a dense, mature plot doesn't become an outbreak
+    // every single day — 0.10 base, +0.01 per established planting, capped at 0.35.
+    return Math.min(0.35, 0.10 + established * 0.01);
+  }
+
+  function triggerLandPestOutbreak() {
+    if (!landPlot || Math.random() >= getLandPestChance()) return;
+
+    const candidates = [];
+    landPlot.tiles.forEach(tile => {
+      LAND_LAYERS.forEach(layer => {
+        const entry = tile.plants[layer];
+        if (!entry || entry.hasPests) return;
+        // Pests target real, established growth — a same-day seedling isn't worth
+        // an aphid's trip, matching the same growth-clock gate every other land
+        // mechanic (windbreak eligibility, guild forgiveness) already uses.
+        if (landGrowthStage(entry, LAND_PLANTS[entry.key].growthSpeed) === 'seedling') return;
+        candidates.push({ tile, layer, entry });
+      });
+    });
+    if (!candidates.length) return;
+
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    const fit = computePlantFit(pick.tile, pick.layer);
+    // Pest Shield gives real, full protection — matching the balcony game's own
+    // "shield formed -> outbreak skipped entirely" rule (marigold), not just reduced
+    // odds. A guild-role check, not a specific-plant lookup, per the categorical
+    // taxonomy the land game uses throughout.
+    if (fit.activeRoles.includes('pestShield')) return;
+
+    // Trap Crop draws the outbreak onto itself instead of the tile that was actually
+    // rolled — "draws pests onto itself, away from neighbors" (Section 2), made
+    // mechanically real rather than left as a badge with no effect. Checks the
+    // rolled tile's own stack plus its real orthogonal neighbors, same adjacency
+    // every guild check already uses.
+    const nearby = collectNearbyEntries(pick.tile, null);
+    const trapEntry = nearby.find(e => {
+      const p = LAND_PLANTS[e.key];
+      return e !== pick.entry && (p.roles || []).includes('trapCrop')
+        && landGrowthStage(e, p.growthSpeed) !== 'seedling' && !e.hasPests;
+    });
+    (trapEntry || pick.entry).hasPests = true;
+    landLastPestDay = landDay;
+  }
+
+  function clearLandPest(index, layer) {
+    const entry = landPlot.tiles[index].plants[layer];
+    if (!entry) return;
+    entry.hasPests = false;
+    landPestEverResolved = true;
+    renderLandTileInfo(index);
+    renderLandGrid();
+    saveGame();
+  }
+
+  function setLandViewMode(mode) {
+    landViewMode = mode;
+    ['elevation', 'daylight', 'wind', 'water'].forEach(m => {
+      const btn = document.getElementById(`landview-${m}`);
+      if (!btn) return;
+      btn.className = m === mode
+        ? 'px-2 py-1 rounded font-bold bg-gold-600 text-moss-950 text-[10px]'
+        : 'px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]';
+    });
+    renderLandGrid();
+  }
+
+  function showLandScreen() {
+    document.getElementById('screen-title').classList.add('hidden');
+    document.getElementById('screen-city-select').classList.add('hidden');
+    document.getElementById('screen-game').classList.add('hidden');
+    document.getElementById('screen-land').classList.remove('hidden');
+    currentScreen = 'land';
+    if (!landSeed) landSeed = Math.floor(Math.random() * 2147483647);
+    if (!landPlot || landPlot.seed !== landSeed) regenerateLandPlot(landSeed);
+    selectedLandTile = null;
+    document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
+    renderLandGrid();
+    saveGame();
+  }
+
+  function backToTitleFromLand() {
+    document.getElementById('screen-land').classList.add('hidden');
+    document.getElementById('screen-title').classList.remove('hidden');
+    currentScreen = 'title';
+    saveGame();
+  }
+
+  function rerollLand() {
+    landSeed = Math.floor(Math.random() * 2147483647);
+    landPlantings = {}; // a new seed is genuinely different ground — old plantings don't carry over
+    landElements = {}; // same — placed structures don't survive a fresh plot either
+    landSightings = {}; // a brand-new zone hasn't earned any of this wildlife yet either
+    landPestEverResolved = false; // and hasn't weathered/recovered from a pest event yet either
+    landLastPestDay = null;
+    landSeedBank = {}; // a landrace is adapted to a SPECIFIC plot — new ground, lineage starts over
+    regenerateLandPlot(landSeed);
+    selectedLandTile = null;
+    document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
+    renderLandGrid();
+    saveGame();
+  }
+  // ================= END THE LAND (early preview) =================
+
   let coins = 60, energy = 10, selectedTool = 'water', currentCity = 'mumbai';
   let harvestMode = 'cash';
   let marketShiftCountdown = 3;
-  let currentScreen = 'city-select';
+  let currentScreen = 'title';
   let tutorialShown = false;
+
+  // ---------- Subtractive onboarding state ----------
+  // Advanced UI (season goals, guild badge) stays hidden until the player has
+  // had a little time in the game or landed a harvest — earned, not dumped on day 1.
+  let hasHarvestedOnce = false;
+  let hintShownSellSave = false;
+  let hintShownGuildEffect = false;
+  function advancedUIEarned() { return day >= 3 || hasHarvestedOnce; }
 
   // Time now passes from what the player DOES (water/plant/clear pest), not a real-time clock.
   const ACTIONS_PER_DAY = 3;
@@ -504,11 +2391,6 @@
   }
 
   // Coin/guild targets get stiffer each season — same 4x4 grid, higher bar.
-  // NOTE: season 1's target was originally 120, which a single good harvest
-  // cycle blows past several times over (a full 4x4 of season-1 crops sells
-  // for ~450-500 coins per cycle). Retuned so hitting the goal takes real
-  // play across the season rather than being trivial by day 5-7. Treat this
-  // as a first-pass number pending real playtest data, not a final balance.
   function getSeasonGoals(n) {
     return { coins: 600 + (n - 1) * 220, guilds: 3 + Math.floor((n - 1) / 2) };
   }
@@ -608,15 +2490,23 @@
   function logMsg(msg) { document.getElementById('log').innerText = msg; }
 
   // ---------- Screen Flow ----------
+  function showCitySelect() {
+    document.getElementById('screen-title').classList.add('hidden');
+    document.getElementById('screen-city-select').classList.remove('hidden');
+    currentScreen = 'city-select';
+    saveGame();
+  }
+
   function selectCityAndStart(cityName) {
     currentCity = cityName;
+    document.getElementById('screen-title').classList.add('hidden');
     document.getElementById('screen-city-select').classList.add('hidden');
     document.getElementById('screen-game').classList.remove('hidden');
     currentScreen = 'game';
     logMsg(`Relocated balcony to ${CITIES[cityName].name}! Weather odds updated.`);
     render();
     if (!tutorialShown) {
-      showTutorial();
+      showTutorial(true);
       tutorialShown = true;
     }
   }
@@ -628,10 +2518,36 @@
     document.getElementById('screen-game').classList.add('hidden');
     document.getElementById('screen-city-select').classList.remove('hidden');
     currentScreen = 'city-select';
+    saveGame();
   }
 
-  function showTutorial() { document.getElementById('tutorial-modal').classList.remove('hidden'); }
+  // minimal=true shows just Goal/Actions/Time (first-ever open, right after picking a
+  // city); minimal=false/omitted shows the full reference guide (manual ❓ taps, and the
+  // "See the full guide now" link inside the minimal view).
+  function showTutorial(minimal) {
+    const isMinimal = minimal === true;
+    document.getElementById('tutorial-advanced').classList.toggle('hidden', isMinimal);
+    document.getElementById('tutorial-minimal-note').classList.toggle('hidden', !isMinimal);
+    document.getElementById('tutorial-modal').classList.remove('hidden');
+  }
   function hideTutorial() { document.getElementById('tutorial-modal').classList.add('hidden'); }
+
+  // ---------- Earned-UI reveal toast (subtractive onboarding) ----------
+  let unlockToastShown = false;
+  function maybeRevealAdvancedUI() {
+    const goalsEl = document.getElementById('season-goals');
+    const guildEl = document.getElementById('guild-status');
+    const earned = advancedUIEarned();
+    goalsEl.classList.toggle('hidden', !earned);
+    guildEl.classList.toggle('hidden', !earned);
+    if (earned && !unlockToastShown) {
+      unlockToastShown = true;
+      const toast = document.getElementById('unlock-toast');
+      toast.innerText = '🎯 Season goals & guild tracking unlocked — check the top of your plot!';
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+  }
 
   // ---------- Season End / Harvest Festival ----------
   function endSeason() {
@@ -666,7 +2582,33 @@
     }
 
     logMsg(`🎉 Season ${seasonNumber} complete! Check your Harvest Festival recap.`);
+
+    // Tutorial hand-off: this balcony is deliberately a short, diluted intro, not a
+    // parallel game to the land — one full season is enough to teach guilds, watering,
+    // and harvesting. After season 1, the primary CTA points at the land instead of
+    // looping the tutorial; a smaller secondary link still lets a player keep growing
+    // the balcony if they genuinely want to, so nothing is taken away, just de-emphasized.
+    const primaryBtn = document.getElementById('recap-primary-btn');
+    const secondaryLink = document.getElementById('recap-secondary-link');
+    const footnote = document.getElementById('recap-footnote');
+    if (seasonNumber === 1) {
+      primaryBtn.innerText = '🌳 Head to the land →';
+      primaryBtn.setAttribute('onclick', 'goToLandFromRecap()');
+      secondaryLink.classList.remove('hidden');
+      footnote.innerText = "You've got the basics — guilds, watering, harvesting. The land is where the real stewardship begins.";
+    } else {
+      primaryBtn.innerText = 'Start Next Season →';
+      primaryBtn.setAttribute('onclick', 'startNextSeason()');
+      secondaryLink.classList.add('hidden');
+      footnote.innerText = 'A fresh plot awaits — coins and saved seeds carry over. Weather & pests get a little tougher each season.';
+    }
+
     document.getElementById('recap-modal').classList.remove('hidden');
+  }
+
+  function goToLandFromRecap() {
+    document.getElementById('recap-modal').classList.add('hidden');
+    showLandScreen();
   }
 
   function startNextSeason() {
@@ -791,6 +2733,7 @@
       ? 'px-2.5 py-1 rounded font-bold bg-emerald-600 text-white'
       : 'px-2.5 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700';
     logMsg(`Harvest mode set to: ${mode === 'cash' ? '🪙 Selling for Cash' : '🧬 Saving Heirloom Seeds'}`);
+    saveGame();
   }
 
   // ---------- Guild Logic ----------
@@ -842,6 +2785,14 @@
     });
     seasonStats.peakGuilds = Math.max(seasonStats.peakGuilds, activeGuilds);
     document.getElementById('guild-status').innerText = `✨ Guilds: ${activeGuilds}`;
+
+    // Contextual, once-ever hint (subtractive onboarding): fires the first time a guild
+    // effect ever forms, explaining what it means right when the player can see it happen —
+    // instead of front-loading guild rules into the day-1 tutorial wall.
+    if (activeGuilds > 0 && !hintShownGuildEffect) {
+      hintShownGuildEffect = true;
+      logMsg(`✨ Guild formed! Neighboring plants are boosting each other's growth — tap ❓ anytime for how each guild effect works.`);
+    }
   }
 
   function updateStockUI() {
@@ -926,6 +2877,7 @@
     updateSelectionIndicator();
     updateSeasonGoalsUI();
     updateGiftSeedsBanner();
+    maybeRevealAdvancedUI();
 
     const gridEl = document.getElementById('grid');
     gridEl.innerHTML = '';
@@ -950,15 +2902,23 @@
       }`;
       cell.onclick = () => handleTileClick(index);
 
+      // Seedling icon fix: show the real species icon from stage 1 onward instead of a
+      // generic 🌱 placeholder, styled smaller/fainter while young so it still reads as
+      // "not grown yet" without being a mystery. Stage 3 = full size, full opacity.
       let icon = '🟫';
+      let iconStyle = '';
       if (tile.hasPests) icon = '🐛';
-      else if (tile.crop) icon = tile.stage >= 3 ? PLANTS[tile.crop].icon : '🌱';
+      else if (tile.crop) {
+        icon = PLANTS[tile.crop].icon;
+        if (tile.stage === 1) iconStyle = 'opacity:0.45; font-size:0.75em;';
+        else if (tile.stage === 2) iconStyle = 'opacity:0.75; font-size:0.9em;';
+      }
 
       cell.innerHTML = `
         ${tile.hasPests ? '<span class="absolute top-0.5 left-0.5 text-[7px] bg-rose-600 text-white px-0.5 rounded font-bold">PEST</span>' : ''}
         ${tile.isHeirloom && !tile.hasPests ? '<span class="absolute top-0.5 left-0.5 text-[7px] bg-emerald-500/40 text-emerald-200 px-0.5 rounded font-bold">👑</span>' : ''}
         ${tile.guildType && !tile.hasPests ? `<span class="absolute top-0.5 right-0.5 text-[6.5px] ${tile.guildEffect === 'choke' ? 'bg-rose-600/50 text-rose-200' : 'bg-gold-500/40 text-gold-200'} px-0.5 rounded font-bold">${tile.guildType}</span>` : ''}
-        <span class="text-xl">${icon}</span>
+        <span class="text-xl" style="${iconStyle}">${icon}</span>
         <span class="text-[9px] text-stone-400 mt-0.5 font-mono-stat">💧${Math.round(tile.moisture)}%${tile.crop && (tile.vigor ?? 1) < 0.7 ? ' 🍂' : ''}</span>
       `;
       gridEl.appendChild(cell);
@@ -968,6 +2928,7 @@
     document.getElementById('energy').innerText = `⚡ ${energy}`;
     document.getElementById('city-effect').innerText = CITIES[currentCity].effectMsg;
     document.getElementById('day-counter').innerText = `Day ${day}/${SEASON_LENGTH} · Season ${seasonNumber}`;
+    saveGame();
   }
 
   function handleTileClick(index) {
@@ -1139,12 +3100,8 @@
     }
   }
 
-  // Always-free way to nudge time forward — no energy cost, no need to
-  // "trick" the game by re-watering an already-saturated tile. Exists so a
-  // full grid + empty energy bar never leaves the player with no honest move.
   function waitAWhile() {
-    logMsg('⏳ You wait a while, tending little things around the plot.');
-    render();
+    logMsg('⏳ Waiting... (no energy cost)');
     registerPlotAction();
   }
 
@@ -1187,30 +3144,144 @@
       }
     });
 
+    const gotSomething = totalCash > 0 || seedsSavedCount > 0;
+    let msg;
     if (harvestMode === 'cash') {
       coins += totalCash;
       seasonStats.coinsEarnedThisSeason += totalCash;
-      logMsg(totalCash > 0 ? `Harvested crops for 🪙 ${totalCash} coins at active market prices!` : 'No healthy, mature crops ready.');
+      msg = totalCash > 0 ? `Harvested crops for 🪙 ${totalCash} coins at active market prices!` : 'No healthy, mature crops ready.';
     } else {
-      logMsg(seedsSavedCount > 0 ? `Processed harvest into 🧬 ${seedsSavedCount} Heirloom Seeds!` : 'No healthy, mature crops ready.');
+      msg = seedsSavedCount > 0 ? `Processed harvest into 🧬 ${seedsSavedCount} Heirloom Seeds!` : 'No healthy, mature crops ready.';
     }
+
+    // Contextual, once-ever hint (subtractive onboarding): fires on your very first real
+    // harvest, nudging toward whichever mode you *didn't* just use — this is the "sell vs.
+    // save seeds" gap confirmed friction from playtesting, taught at the moment it matters
+    // instead of buried in the day-1 tutorial wall.
+    if (gotSomething) {
+      if (!hasHarvestedOnce) {
+        hasHarvestedOnce = true;
+        const tip = harvestMode === 'cash'
+          ? ' 💡 Tip: try 🧬 Save Seeds mode sometimes — heirloom seeds grow into plants worth 50% more when you do sell them.'
+          : ' 💡 Tip: 🪙 Sell Cash mode gets you coins right away — saved seeds pay off later as heirlooms instead.';
+        msg += tip;
+      }
+    }
+    logMsg(msg);
     render();
   }
 
+  // ---------- Persistence ----------
+  // Confirmed by every playtester as the #1 problem: losing all progress on close.
+  // Saves after every render() (i.e. after every state-changing action — the game is
+  // action-driven, not real-time, so this never fires in a tight loop) plus the couple
+  // of screen-flow spots that change state without calling render().
+  const SAVE_KEY = 'pocketPermacultureSave_v1';
+
+  function serializeState() {
+    return {
+      coins, energy, currentCity, harvestMode, marketShiftCountdown,
+      currentScreen, tutorialShown, actionProgress,
+      currentWeather, weatherDuration,
+      day, seasonNumber, seasonEnded, unlockedPlants,
+      blockedTiles: Array.from(blockedTiles),
+      seasonStats, supplyPressure, savedSeeds, marketPrices, grid,
+      hasHarvestedOnce, hintShownSellSave, hintShownGuildEffect, unlockToastShown,
+      landSeed, landPlantings, landElements, landDay, landSightings,
+      landPestEverResolved, landLastPestDay,
+      landCoins, landTrust, landSeedBank,
+    };
+  }
+
+  function saveGame() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(serializeState()));
+    } catch (e) {
+      // localStorage can fail (private browsing, quota, packaged-WebView quirks) —
+      // a save failure should never break gameplay, just silently skip persisting.
+    }
+  }
+
+  function loadGame() {
+    let raw;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+    if (!raw) return false;
+    let s;
+    try { s = JSON.parse(raw); } catch (e) { return false; }
+    if (!s || typeof s !== 'object') return false;
+
+    coins = s.coins; energy = s.energy; currentCity = s.currentCity; harvestMode = s.harvestMode;
+    marketShiftCountdown = s.marketShiftCountdown; currentScreen = s.currentScreen;
+    tutorialShown = s.tutorialShown; actionProgress = s.actionProgress;
+    currentWeather = s.currentWeather; weatherDuration = s.weatherDuration;
+    day = s.day; seasonNumber = s.seasonNumber; seasonEnded = s.seasonEnded;
+    unlockedPlants = s.unlockedPlants;
+    blockedTiles = new Set(s.blockedTiles || []);
+    seasonStats = s.seasonStats; supplyPressure = s.supplyPressure;
+    savedSeeds = s.savedSeeds; marketPrices = s.marketPrices; grid = s.grid;
+    hasHarvestedOnce = !!s.hasHarvestedOnce;
+    hintShownSellSave = !!s.hintShownSellSave;
+    hintShownGuildEffect = !!s.hintShownGuildEffect;
+    unlockToastShown = !!s.unlockToastShown;
+    landSeed = s.landSeed || null; // older saves predate the land preview — fine to be null
+    landPlantings = s.landPlantings || {}; // older saves predate planting — fine to start empty
+    landElements = s.landElements || {}; // older saves predate design elements — fine to start empty
+    landDay = s.landDay || 1; // older saves predate the growth clock — fine to start at day 1
+    landSightings = s.landSightings || {}; // older saves predate the sighting journal — fine to start empty
+    landPestEverResolved = !!s.landPestEverResolved; // older saves predate pests — fine to start false
+    landLastPestDay = s.landLastPestDay != null ? s.landLastPestDay : null;
+    landCoins = s.landCoins != null ? s.landCoins : 50; // older saves predate the economy — fine to start at the default
+    landTrust = s.landTrust || 0;
+    landSeedBank = s.landSeedBank || {};
+    normalizeLandPlantings(); // migrates any pre-growth-clock save (plain string plant keys)
+    return true;
+  }
+
+  // Pre-growth-clock saves stored a bare plant key string per layer instead of
+  // { key, plantedOn }. Rather than break those saves outright, treat anything found
+  // in that old shape as freshly planted today — the honest fallback, since the
+  // original planting date was never recorded.
+  function normalizeLandPlantings() {
+    Object.keys(landPlantings).forEach(i => {
+      const tileEntry = landPlantings[i];
+      Object.keys(tileEntry).forEach(layer => {
+        if (typeof tileEntry[layer] === 'string') {
+          tileEntry[layer] = { key: tileEntry[layer], plantedOn: landDay };
+        }
+      });
+    });
+  }
+
   // ---------- Init ----------
-  unlockedPlants = getUnlockedPlantsForSeason(seasonNumber);
-  rollBlockedTiles();
+  const restoredSave = loadGame();
   renderCityCards();
-  renderToolGrid();
-  renderMarketBoard();
-  selectTool('water');
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
+
+  if (restoredSave && currentScreen === 'game') {
+    document.getElementById('screen-title').classList.add('hidden');
+    document.getElementById('screen-city-select').classList.add('hidden');
+    document.getElementById('screen-game').classList.remove('hidden');
+    renderToolGrid();
+    renderMarketBoard();
+    selectTool('water');
+    updateActionProgressUI();
+    render();
+    logMsg(`Welcome back to your ${CITIES[currentCity].name} balcony!`);
+  } else if (restoredSave && currentScreen === 'city-select') {
+    document.getElementById('screen-title').classList.add('hidden');
+    document.getElementById('screen-city-select').classList.remove('hidden');
+  } else if (restoredSave && currentScreen === 'land') {
+    document.getElementById('screen-title').classList.add('hidden');
+    document.getElementById('screen-land').classList.remove('hidden');
+    if (!landSeed) landSeed = Math.floor(Math.random() * 2147483647);
+    regenerateLandPlot(landSeed);
+    renderLandGrid();
+  } else {
+    unlockedPlants = getUnlockedPlantsForSeason(seasonNumber);
+    rollBlockedTiles();
+    renderToolGrid();
+    renderMarketBoard();
+    selectTool('water');
+  }
 </script>
 </body>
 </html>
