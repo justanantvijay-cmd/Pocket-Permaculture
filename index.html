@@ -18,6 +18,27 @@
      per the hard design law, no mechanic may ever require another player. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
+  /* ---- Terrain sprite textures (Sept 13 2026, visual overhaul groundwork) ----
+     Kenney "RPG Base" pack (CC0, kenney.nl/assets/rpg-base) — two 64x64 tiles
+     (plain grass, plain water) embedded inline so the game stays a single
+     self-contained file with zero new network dependency. Applied via
+     background-blend-mode (see .land-tile below) so the existing translucent
+     elevation/daylight/wind/moisture color tint (landTileColor(), near-opaque by
+     design for legibility) still reads correctly on top of a real texture instead
+     of a flat fill. Only grass + water made it in this pass; dirt/crop-stage/
+     wildlife/background art are still open (see the asset-pack shortlist doc). */
+:root {
+    --land-tex-grass: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDIxIDc5LjE1NDkxMSwgMjAxMy8xMC8yOS0xMTo0NzoxNiAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo4QUE2OUU0NkQ1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo4QUE2OUU0N0Q1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjhBQTY5RTQ0RDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjhBQTY5RTQ1RDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+rfd5NQAAA8NJREFUeNrsWstu2zAQtGjq4aROm6Ao+jr3D/qZ/ateeugP9JBrD0URoA/UseO4Y0+yZiiRZijKkgMvAkOhKXmHuzu7XCr79Pnj6JBFjQ5cjgCeAIDlcnnYAObz+WKxMEesfy3xf9sDgCzLoJPY4WYjfov5J/QAAAI73G4EYJTyPXY8HmMOZg4LADFAcOEHgG9ptNVqJYPReNKwUFaTnZPpbOJ1Fp5w0Um0r68xVhQKcbEbLYALTEA8cCZG+Elr+G3YOQAJaLi7y4u43vQceQIhEXnnAGTlXD5TV0LUbZyPp3FCuPatAIgSLo+vj2OEsF13cVAczB9LDwAghvI8b+k5gbEeaN7AmdpMqEVR7AFDHNvsAAC3AwAEkCvsUkm4EUw+8GilrORiJpTVRnqvN2ezmVkv4tqsppSViZBThOBYHfQOgDmeWuHz+vrapClVzy/AwHrLtLWwRy8A8Am9oQM+LQ+0AUgu5DWVXm6kL+1FK9iBI2ZIaKYPTz5ixfLY4EtuAScLSdYIocXA5JJ4z9WU0akwTKHNymRnconj/giRBW20PDWhI+lHJZe9LT9+SKLOVXRwXLvMNAT2DPlWj4YqTxzAsbF1BDAsAGmbbT0AsLqLrBkPCYC1l7Aq3sMAAGHFK7X7fkSnAiC+VK94Ixo24cVvD63FkPKTC7E/CzR6PHtsWsf8BG7EPiTk3lYAZHvgqnijQxk3AoDaSIcAhHZcPtMGAFYHzFYUhexyYdJ690239BwP4bSJBDyZ+wFi8Bzq6CTkkxyAyQTCbOK0bMrTGro9/yTfTHqojKdYpnMObj/AIwLX0tRpQ9e5r+v2aLjz+Kcx3zUAQNxUVWWOjLzt1eQAQrokMkE3IpPjAnbzJpPJAI3gjAG2eFnP8Ni0r55cDADzDJTOM8COy24LxFlzWBaw0i2DpqU1umit6kYSqFNTKiKKOE0MAiBNdtciJfEl7jyxQAlJWVn6ZW5J8ntktoR7Tl1dlWvOqW4W1WoPNQ8AQHtgKMvSrB3i9j1rAO++vuLVrzd/f364us273Y+LMRkM8FseK0YD2Mbr2ffT919eq0W2BwAMNnm3y3rZI76tks/023uDdNXGuT9KFMKQ67hX0dRJmeNPlr38U5xfnnWhOo86zQNFU9gBiGALdVrl+DufVnLfxeXz4nfexdpb+xWXPOoNgTsXGis1Pdm+6fHy24vuvD+h9g8ycZnrQi/nN+sYmlxVMMJ8ukiOIfnMB0H8bLL1nIsOIiELlkgWgiOV+V2SP/1xov/1ubcMlP8CDABA4WWZS6l4nwAAAABJRU5ErkJggg==");
+    --land-sprite-canopy: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAeCAYAAADOziUSAAABnElEQVR4nLWVwUpCQRSG/6nZpKIZyUWJgqCF+xZ3qW/QOoigJ2jRRh9ANy16gkCC1r2BLl20dyEEhigXxbihrZLb4jbdc8czo5n9IHr+OfPd/wwXR0DTZbUS6J6uRq0uOF/qELecg5NPshBvOPv+VQk4oDBB9lNR73ga/NTjaQBvOEO7OVpIKW1JTHLySbhlVUUppZNPGlOomn5TYDhRBJTQxIFsfgjMAagEki7Sc7GJgj3ix5LZIKaUdNyFMVeR6aExmHqPlr9nUQ/1ttZJxqndHEFS8rIENDG3T9INXBOtOYCSW86FMFvTb7SxM+t0J2GyTncCACie7IHW1NM3/msyAJD0KXpCUxq6rny/P4fkFkxjcGBjsr9qI2fm9+do1OpC+v05MgfbawGU1D+tAFa7kXSxF4pu3F1dBAXnkwUMPInr+wf2mgMMZ5ba3VnJs8LOSrVDupl+uB5d0tSQzibw/vaBdDZBXD8GfGpVX+keQUGl407v1M1YR3lu+2i9FI9UTYGxMWmTSbYeQWPrujkf9ADg9rHAAvQxvwCnBMiLDVqOuQAAAABJRU5ErkJggg==");
+    --land-sprite-shrub: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAACKElEQVR4nO2UsW8SURzHP9eesbFwNZeSpoTAIgPdJejSsJqmo4tDR9d2aQLumnTRP0Hj5mIn13ax6cJIGc6FyzUXQnPACUZFcw70Pd89DmgnF78LP977fb6/3/v9CAaaPj4/jB7tlhlcBlw0vmBZKwA0miGHn94Yev4ifklPGA5/MrgM8BxPmt9GOp/Y0ftn+1E2axGG37GslRt3n8TPhI6e7Ecivo15Ev9f/1ZyeXv1GgDW/TuE/XHigt69fHWjZe/Va5I3hLmduUvQ/REBVKoZNjZXWU9N/K6GER1/xPlJN7HQPN5QL8WFkFpASBQSRRbxS0Dscj1lTBmrZxubq1SqmdgY5vHm9cxjlXW1X1zI2O9B+iAvvy/izbA/jirVjDxQx6F+L29v4Tkefi+8fgVALQr7Y+bxpgg6/ojUWzfW6YOjkow9x0PN1dXxR/IVajz1b1re3iKbtWJG6YM8jWZIoxnK8aiLVosIRsSmZZvG+Uk3qlQzU53qRVRNxlKLVB6IvQLADINf0Vpu+W+nr91EQ10tJwBA5VVjIVMFSkUbbydFqWjTcgIefh7KRL8H3k5qbkHBiU/QdiAORRLEd1Iq2vJ83qsEXyramIOzdIHHX9truWUJt5yAlhOQ03YiDAAG3m8GZ+kCwCxevkAkqhcwGYn49ejjEczxad2dxcNkBy6Qdz/cKwDkn35rqwm6scg7Pq27Sec6L5bsAnk1cZZ0Y4VHbVToD8YpbKNxjRjhAAAAAElFTkSuQmCC");
+    --land-sprite-understory: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAQCAYAAAAFzx/vAAABfUlEQVR4nK2Uv07CUBTGv1u6KNUqKWkwJE4MHUkcGsPCgxgSByZfAB5AVwcmNt/AN5AYY3gDBhYxjdBAUBR0UFMHcuu9t+e28c839Z5zb3/nfPcPg6JGuxXx74vTM6bG1NxPlfihXy/Gyf7VVIoNhvM4twg+f1UAa7RbkQhxS3kAQDhekQtEqCheQBbY9OvFGPIX2eVcomtKBoc5FoNjJYvTFeNVCvAqhQSU2u/z46M4xq7vutKE2XI95Ja6pTxpb5q11UkgxQ58GwBQa3aYqYK4smzm3VHgPfcD1s4GAGB7d1PKGbNllICJ0h2eLC2f3si46ViMBIogyladpWm66Z5Ehi6ps3QwnMcw9dBQen58lcZGmp3/IXEPa80O03YoSrSTug5c4j3kh0bt0AzHq4R9aQdF3DvqqatOAjzABMJ3sZRv4Pq9nEpvqCr+ptrlnLajxe3WPgD04ElzLnvte3Fs8ol9TEc6IJ+Dw5cRGU8BqIovPrVYC9YoCwYAX/9Ors+3xBXDAAAAAElFTkSuQmCC");
+    --land-sprite-climber: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAABJElEQVR4nH2SL0gEQRTGf7OYlA23bHC540AwiWwRjFsFi0bDgmGD1aLYLecZtBo2CBs0HwhG1yAYDIdNUZBlk2xwNRwIYzhnbm//3Evvzfe+9775ZgT/cXS5I2mI3u6VKJ8JRSqDURzoQc/vPxWyaCK5XZvsewRAkuUV8lyTvOHHZxMEgFHcouT5XijSnokzaOMM2gCsLi1M9RiK1LFMPa2/uS+3tld0LS/GmNu16VgmURxIvTHJcnwvrLhXJBflGzB2rUxKXhIA0vSrdpDYO/Zlq/tbAazrRZzWpH56g7WTHOWBiOJA3t+NaqfO39g6P3s4n37HopMAr7d9CXD6ONRNB+uuzpc3DoW+o3JKkWaF6mn8AMUtdSFg8i99LxSztiqZAH82n31ldlLH3gAAAABJRU5ErkJggg==");
+    --land-sprite-groundcover: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAq0lEQVR4nHWOoQrCUABFz1uyuKAGg1hmNmi3Cms2g22CfzD0CwT/QNAgrJut6xrMbkGEGXThubClZ3GPOfTEy7mXKzzfUXyYDLZiP3PVaL0SxVx4vqO67QYAwVJhmhWkTLEWAoDz9YGR23GSEdoRUqaEdkScZOglgHy6VatyDJ70rTq3+KUvCAqU//GP+W6sypnxSywjAC6HlW5v7iemzZ4WOkP3+1NRzgWAN8RLPrvHbyRqAAAAAElFTkSuQmCC");
+    --land-sprite-root: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAA9klEQVR4nNWRvW3DMBCFPwpCQLCxYDhN4DRBCpcpUnqLLOARMoJH8AhZwFuk9AjpnE6B4MAAcTIsMQVBUZRVqM1V/Pveu3tUTKjtZu2S/cenAlBTwNXTHVYarHWIwHdp2e0PahTuOy2KDGP8M2v9cRDIpwB9SOtokgfwZWWQyxUrTXc5hLT261paALLtZu0WRYZcrglUVTGj+Vx1IgCzIvNwB0jDTxUFlg950noAa2n5OvrA8qjokof99kNpDbUMZh6GoXU6b3CsBcqzsNsf4j+/v7265b25cQpCv6eW8uxVAtjBQQDg+dEkiY5BN/BQJNQY9M/rD/sAkJKeBDz8AAAAAElFTkSuQmCC");
+    --land-tex-dirt: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDIxIDc5LjE1NDkxMSwgMjAxMy8xMC8yOS0xMTo0NzoxNiAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo4QUREMUU1NEQ1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo4QUREMUU1NUQ1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjhBREQxRTUyRDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjhBREQxRTUzRDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+WU32PgAAA9RJREFUeNrMWWmioyAMlsX2HXGuNIeae828CkwgLQ9FIUJo5UdrrXxmIbv48/vXlCwpxG1WeO2c+/cwE2HFXX+/F+KTbSvHl5vfs/65I4RIf7IsdkC5QQei0ztKSrm+00m94EPbMgDYQO44mR3hszFwRCjI7KYVXcZKCsrhsdYZYxdjz+pwg6/xC0gsKBeOEWwz1u2xtxItXCg5zdNkrPUkvragCOCmc550/xURYJeiaibH114wzpNY3qmVtNa4hO6AJY7YTt+E+MuBvOEmnYEcXxPPZfBIyr9MCnlM9+6b4pnZfcAFHrRqNA99wlykuEmF8WHxKvQnAfi433SnIaJc2hxUC99A+oLHOcjP0AzROVf411jHEAeIy2Xya9iVK6HMISsD6ze5mnQnwgOUIwRMepfQbAOpQacCLbvgFwMV6udaqIlB4zF5g/EpQvCcGs5y1YfmLhXDAiDOSlK2ewcQnJjNWKFQD9seyUE1PgIYEWD19+KvZu9OxSklgNxP+T50YujBoslSqIctD2N2jcoHsqp58S6MJ9q5YLRuJiQpwb454gAvG6BAypMmUddpL+RDlR2onir+5uhXNOA1CplW+Aqfz/v3WbEk8Q34lAijo4UBu2DQuzGSqO6qJz2L76kyjhrIjiylOUZuz8N5/OAaBUMkPlt2NCRzzTW0TC2mkGn1K6ENv9pYkFitXlkJWDkdGvHXK5svyBgYbC44KPlcFX9TD2IhKkNppdG7FfIIQMd0Dd0UVmT0/gILPsZv+BcOi6c7fD55w94bOGMorCDXMmZdcb/QgQp0giGRcstkZZIS7tKNRTei9ePDxddN5/jPW7D5HhI60GQsuCK6T2IXmydSPiVcV/cbuuMahx8N4KeyjmnjK/WfdtPgdCPIDsVz1Esdhy9TP5B6OiGeTKPAWPzMCPyVrUDavS0X3X5+0bZG4MtcX6tXLpzufwS+LBSvmDbyBix2fJ75AL0Fz47/4flAP/7n5wOd+B+bD3Dhv28+MAj/ffOBQfjvmw8Mwr/EfKAH/33zgUH475sPDMLnnA/s9u9H47PNB47696PxeeYDhf59Ayen8BnmA+X+Pb5pHL6cuucD5f79aPzeRK3avx+N3zUfoPTvR+N3zQdORYBB+DKGcezf4wQuPXMFDdLtchx+13yA0r8fjd87H2Cp1z45H6AX5tedD5T791idjMPnmQ/k/fvw4mcfPPZlGfGZ5wOxf4+lYNq/x34yBb9ar42dDxz174nzAYojvvR8gB4NrzgfoK8rzgc4m7vN/XsiJTk+MwPN/XsxCdoJ5u8A/BdgAD4w6toyS9iDAAAAAElFTkSuQmCC");
+    --land-tex-water: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDIxIDc5LjE1NDkxMSwgMjAxMy8xMC8yOS0xMTo0NzoxNiAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo4QUMyMThCREQ1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo4QUMyMThCRUQ1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjhBQzIxOEJCRDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjhBQzIxOEJDRDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+ifV0RwAACBRJREFUeNq0Wk2P3EQQ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");
+  }
+
   /* ---- Base / resets ---- */
   * { box-sizing: border-box; }
   body { touch-action: manipulation; margin: 0; }
@@ -123,6 +144,14 @@
     position: relative; aspect-ratio: 1;
     display: flex; align-items: center; justify-content: center;
     font-size: 13px; cursor: pointer;
+    /* Real ground texture under the color-coded tint (Sept 13 2026) — grass by
+       default; JS swaps to --land-tex-water on a placed pond tile. multiply keeps
+       the near-opaque tint (landTileColor) legible for the actual game info it
+       encodes, while still letting the texture's light/dark pattern show through
+       per-pixel instead of a flat color hiding it completely. */
+    background-image: var(--land-tex-grass);
+    background-size: cover;
+    background-blend-mode: multiply;
   }
   .cliff-edge { position: absolute; pointer-events: none; }
   .cliff-top    { top: 0; left: 0; right: 0; height: var(--w); background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
@@ -179,6 +208,40 @@
     text-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 0 3px rgba(0,0,0,0.35);
   }
   .land-growth-icon-dominant { z-index: 2; }
+  /* Real sprite art per food-forest layer (Sept 13 2026 visual-overhaul pass,
+     replacing the plain-emoji icon above). One representative pixel-art sprite per
+     LAND_LAYERS entry (canopy tree, shrub berry-bush, understory hedge, climber
+     vine, groundcover flower, root tuber — see LAND_LAYER_SPRITE_VAR) — not
+     per-species, since no free pack has India-specific trees like Karanj or
+     Glyricidia; the layer is what the sprite communicates, exactly like the emoji
+     it replaces did. Same position/size/opacity math as .land-growth-icon, just
+     background-image + explicit width/height instead of a text glyph. */
+  .land-growth-sprite {
+    position: absolute; transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 1; image-rendering: pixelated;
+    background-size: contain; background-repeat: no-repeat; background-position: center;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55));
+  }
+  .land-growth-sprite-dominant { z-index: 2; }
+  /* A placed design element (swale/pond/hedge/etc., LAND_ELEMENTS) previously only
+     affected mechanics — never drew anything on the tile itself, so a placed
+     structure was invisible on the grid (bug flagged Sep 12 2026, fixed Sep 13).
+     Rendered bottom-left so it never collides with the pest badge (top-right) or
+     the plant growth icons (which cluster mid-tile); a faint tinted disc behind the
+     glyph keeps it legible against every terrain color, same trick as the growth
+     blobs use for plants. */
+  .land-element-icon {
+    position: absolute; bottom: 1px; left: 1px; z-index: 3;
+    font-size: 11px; line-height: 1; pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 3px rgba(0,0,0,0.5);
+  }
+  /* Sprite variant of the above (hedge only, Sept 13 2026) — background-image +
+     explicit box instead of a text glyph, same corner position. */
+  .land-element-sprite {
+    width: 16px; height: 11px; image-rendering: pixelated;
+    background-size: contain; background-repeat: no-repeat; background-position: center;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+  }
   /* Sighting journal (Aug 2026) — a field-notebook card per creature's first
      sighting, reverse-chronological. Tier 3 gets a visually larger/highlighted card
      per the content draft's "the day the hornbill came, not a bigger checkbox" spec —
@@ -258,6 +321,53 @@
     border-radius: 6px; padding: 5px 7px; cursor: pointer;
   }
   .land-plant-add:hover { background: rgba(52,211,153,0.16); }
+  /* ---- Tile action popup (Sept 13 2026, Farmville-style on-tile actions) ---- */
+  .land-tile-popup {
+    position: absolute; z-index: 20; min-width: 128px;
+    background: #1a2f14; border: 1px solid rgba(250,204,21,0.4); border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    padding: 5px; pointer-events: auto;
+  }
+  .land-tile-popup-body { display: flex; flex-direction: column; gap: 4px; }
+  .land-tile-popup::before {
+    content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
+  }
+  /* Default: bubble sits above the tile, arrow points down from its bottom edge. */
+  .land-tile-popup::before { bottom: -6px; border-top: 6px solid #1a2f14; }
+  .land-tile-popup.land-tile-popup-below::before { top: -6px; bottom: auto; border-top: none; border-bottom: 6px solid #1a2f14; }
+  .land-popup-action {
+    font-size: 10px; font-weight: 700; padding: 5px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.06); color: #e7e5e4; border: 1px solid rgba(255,255,255,0.14);
+    cursor: pointer; text-align: left; white-space: nowrap;
+  }
+  .land-popup-action-coin { background: rgba(250,204,21,0.16); color: #facc15; border-color: rgba(250,204,21,0.4); }
+  .land-popup-action-trust { background: rgba(94,178,178,0.16); color: #7dd3fc; border-color: rgba(94,178,178,0.4); }
+  .land-tile-popup-close {
+    position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; line-height: 14px;
+    border-radius: 50%; background: #292524; color: #a8a29e; border: 1px solid rgba(255,255,255,0.2);
+    font-size: 9px; cursor: pointer; text-align: center; padding: 0;
+  }
+
+  /* ---- Account / cloud save (Sept 13 2026) ---- */
+  .account-box {
+    background: rgba(0,0,0,0.22); border: 1px solid rgba(217,119,6,0.25);
+    border-radius: 8px; padding: 8px 10px; text-align: left;
+  }
+  .account-input {
+    width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 6px; padding: 6px 8px; color: #e7e5e4; font-size: 11px; margin-top: 4px;
+  }
+  .account-input:focus { outline: none; border-color: #d4a441; }
+  .account-btn-row { display: flex; gap: 6px; margin-top: 6px; }
+  .account-btn {
+    flex: 1; font-size: 10px; font-weight: 700; padding: 6px 0; border-radius: 6px;
+    background: rgba(250,204,21,0.14); color: #facc15; border: 1px solid rgba(250,204,21,0.35);
+    cursor: pointer;
+  }
+  .account-btn-secondary { background: rgba(255,255,255,0.05); color: #a8a29e; border-color: rgba(255,255,255,0.14); }
+  .account-status { font-size: 9px; color: #a8a29e; margin-top: 4px; }
+  .account-error { font-size: 9px; color: #fca5a5; margin-top: 4px; }
   .land-element-row {
     display: flex; align-items: flex-start; gap: 6px;
     background: rgba(217,119,6,0.10); border: 1px solid rgba(217,119,6,0.25);
@@ -481,6 +591,13 @@
     </div>
     <p class="text-stone-400 text-xs px-6 leading-relaxed">Design a food forest across a real plot of land — shape water, wind and sun, stack a real guild of plants, and watch wildlife return as your ground genuinely heals. Tend it with neighbours doing the same, at your own pace.</p>
     <p class="text-stone-500 text-[10px] px-6">A living plot. A village of neighbours. Restoration, not just farming 🌳</p>
+
+    <!-- Account / cloud save (Sept 13 2026) — a real login so progress survives a
+         cleared cache or a switch to a different browser/device, instead of living
+         only in this browser's localStorage. Entirely optional: with no account,
+         the game behaves exactly as before (local save only). See account* functions. -->
+    <div id="account-panel" class="w-full px-6 text-[10px]"></div>
+
     <button onclick="showLandScreen()" class="mt-2 bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-3 px-8 rounded-xl shadow-lg">Start Restoring →</button>
     <button onclick="showCitySelect()" class="text-stone-500 hover:text-stone-300 text-[10px] underline">🌱 New to companion planting? Try the 5-minute tutorial</button>
   </div>
@@ -529,7 +646,7 @@
            consistent with how the grid's own column count is set. The parcel frame
            inside it is the actual land — one boundary around the whole plot, not a
            border around every tile. -->
-      <div style="position:relative; padding: 13px 3px;">
+      <div id="land-plot-frame-wrap" style="position:relative; padding: 13px 3px;">
         <span style="position:absolute; top:0; left:50%; transform:translateX(-50%);" class="text-[8px] text-stone-500 font-bold">N</span>
         <span style="position:absolute; bottom:0; left:50%; transform:translateX(-50%);" class="text-[8px] text-stone-500 font-bold">S</span>
         <span style="position:absolute; left:0; top:50%; transform:translateY(-50%);" class="text-[8px] text-stone-500 font-bold">W</span>
@@ -541,16 +658,24 @@
              sighting, so it's felt in the moment rather than only ever discovered
              later in the Field Notebook. See queueSightingToast()/showSightingToast(). -->
         <div id="land-sighting-toast" class="land-sighting-toast hidden"></div>
+
+        <!-- Tile action popup (Sept 13 2026) — Farmville-style: tap a tile with
+             something harvestable/giveable/pest-ridden and a bubble pops up right
+             over that tile with the action, instead of having to scroll to the
+             panel below the grid. Positioned in JS by renderLandTilePopup() against
+             this wrapper (not #land-grid itself, which clips via overflow:hidden).
+             Purely additive — the panel below still shows the full per-layer detail
+             (fit, stage, tags, generation) this compact bubble has no room for. -->
+        <div id="land-tile-popup" class="land-tile-popup hidden"></div>
       </div>
 
       <div id="land-legend" class="mb-2"></div>
 
       <!-- Cross-section (Sept 2026) — a side-view stack of all 6 layers for the
-           selected tile, canopy at top down to root underground, labeled with each
-           layer's live fit. The grid itself now also shows one icon per planted
-           layer (AV reversed the earlier single-icon call on Sept 12 2026); this
-           panel is still the clearest ordered read of the full stack. See
-           renderLandCrossSection(). -->
+           selected tile, canopy at top down to root underground. The 64-tile grid
+           deliberately shows only one icon per tile (AV's own earlier call, to keep
+           it from becoming clutter) — this is where the real multi-layer structure
+           of a food-forest tile actually gets to be seen. See renderLandCrossSection(). -->
       <div id="land-cross-section" class="mb-2"></div>
 
       <div id="land-tile-info" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 text-[11px] leading-relaxed" style="min-height: 3.5rem;">
@@ -566,11 +691,9 @@
       <div id="land-sightings" class="flex flex-col gap-1.5"></div>
     </div>
 
-    <!-- The land screen's own time control — separate from the balcony game's
-         day/season clock. Time also now advances on its own as you take real
-         actions (see registerLandAction()/LAND_ACTIONS_PER_DAY), so this button is
-         a manual fast-forward rather than the only way a day ever passes. -->
-    <div id="land-action-progress" class="text-center text-[10px] text-stone-500 mb-1"></div>
+    <!-- The land screen's own simple time control — separate from the balcony
+         game's day/season clock, since there's no tending action here yet to
+         advance time implicitly. See advanceLandDay() in the script. -->
     <button onclick="advanceLandDay()" class="mb-2 bg-gold-600/20 text-gold-300 border border-gold-500/40 py-2 rounded-lg text-xs font-bold hover:bg-gold-600/30">🌞 Let a day pass</button>
 
     <div class="flex gap-2 mb-4">
@@ -1031,6 +1154,15 @@
   // (canopy down to root) the way a real homestead plot works. So a land tile holds
   // up to one plant per layer slot, not one plant total.
   const LAND_LAYERS = ['canopy', 'understory', 'shrub', 'groundcover', 'climber', 'root'];
+  // Maps each food-forest layer to the CSS custom property holding its real sprite
+  // art (Sept 13 2026 visual-overhaul pass) — see the --land-sprite-* vars in :root
+  // and the .land-growth-sprite rule. landGrowthOverlayHtml() reads this instead of
+  // rendering plant.icon as text.
+  const LAND_LAYER_SPRITE_VAR = {
+    canopy: '--land-sprite-canopy', understory: '--land-sprite-understory',
+    shrub: '--land-sprite-shrub', groundcover: '--land-sprite-groundcover',
+    climber: '--land-sprite-climber', root: '--land-sprite-root',
+  };
   const LAND_LAYER_INFO = {
     canopy:      { label: 'Canopy',      icon: '🌳' },
     understory:  { label: 'Understory',  icon: '🌴' },
@@ -1626,15 +1758,6 @@
   let landTrust = 0;
   let landSeedBank = {}; // { [plantKey]: highest generation banked }
 
-  // Action-driven day advance (Sept 12 2026, AV's call — time shouldn't wait on a
-  // manual button alone). Mirrors the balcony game's own registerPlotAction/
-  // ACTIONS_PER_DAY pattern: every real land action (planting, placing an element,
-  // harvesting, giving away, clearing a pest) nudges a counter, and every
-  // LAND_ACTIONS_PER_DAY of them a day passes automatically. The manual "Let a day
-  // pass" button still works on its own and resets this counter too.
-  const LAND_ACTIONS_PER_DAY = 3;
-  let landActionProgress = 0;
-
   // First-pass values, like every other magnitude in this project (flagged, not
   // derived from playtesting): a real relative ordering — canopy/slow-growing
   // species represent the most time and space invested, so they pay out the most —
@@ -1644,18 +1767,6 @@
   function landPlantValue(key) {
     const plant = LAND_PLANTS[key];
     return Math.round((LAND_LAYER_VALUE[plant.layer] || 8) * (LAND_SPEED_MULT[plant.growthSpeed] || 1));
-  }
-
-  // What planting actually costs (Sept 12 2026 — AV flagged that coins weren't
-  // being spent at all; planting was free). A seedling costs a fraction of its own
-  // eventual harvest value — real investment, but the harvest is still meant to pay
-  // it back with a profit once mature, so the loop (spend to plant, earn back more
-  // by harvesting) actually functions. Free from your own seed bank once you've
-  // harvested that species here before — the honest lineage default already used for
-  // generation inheritance; buying a fresh market seedling is what actually costs.
-  function landPlantSeedCost(key) {
-    if (landSeedBank[key]) return 0;
-    return Math.max(2, Math.round(landPlantValue(key) * 0.35));
   }
 
   // Harvest: sells a mature planting for coins and banks a seed generation for next
@@ -1675,7 +1786,6 @@
     landCoins += coinsEarned;
     landSeedBank[entry.key] = Math.min(6, generation + 1);
     removeLandPlant(index, layer);
-    registerLandAction();
     return coinsEarned;
   }
 
@@ -1693,7 +1803,6 @@
     const trustEarned = Math.round(landPlantValue(entry.key) * 0.4);
     landTrust += trustEarned;
     removeLandPlant(index, layer);
-    registerLandAction();
     return trustEarned;
   }
 
@@ -1715,17 +1824,32 @@
   let villageState = 'idle';   // idle | connecting | connected | unavailable
   let villageError = '';
 
+  // One Supabase client, shared by the village layer above and the account/cloud-
+  // save layer below (accountLogin, further down this file) — same project, same
+  // publishable key, no reason to instantiate it twice. Whichever feature touches
+  // Supabase first creates it; the other reuses it.
+  function ensureSupabaseClient() {
+    if (villageClient) return villageClient;
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+      throw new Error('Supabase client library did not load');
+    }
+    villageClient = window.supabase.createClient(VILLAGE_SUPABASE_URL, VILLAGE_SUPABASE_KEY);
+    return villageClient;
+  }
+
   async function connectToVillage() {
     if (villageState === 'connecting' || villageState === 'connected') return;
     villageState = 'connecting';
     renderVillagePanel();
     try {
-      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-        throw new Error('Supabase client library did not load');
-      }
-      if (!villageClient) villageClient = window.supabase.createClient(VILLAGE_SUPABASE_URL, VILLAGE_SUPABASE_KEY);
+      ensureSupabaseClient();
       const { data: sessionData, error: authErr } = await villageClient.auth.getSession();
       if (!sessionData || !sessionData.session) {
+        // No session at all yet — fall back to an anonymous player so the village
+        // layer still works with zero account setup. A player who has logged in
+        // via the Account panel (see accountSignIn) already has a real session by
+        // this point, so this branch is skipped and their homestead ties to their
+        // real account instead of a disposable anonymous one.
         const { error: signInErr } = await villageClient.auth.signInAnonymously();
         if (signInErr) throw signInErr;
       } else if (authErr) {
@@ -1893,6 +2017,161 @@
       <div class="mt-2" style="font-weight:700;color:#e7e5e4;">Donate your own lineage</div>
       <div class="land-plant-row-economy" style="flex-wrap:wrap;">${donateHtml}</div>
     `;
+  }
+
+  // ---- Account / cloud save (Sept 13 2026) ----
+  // Local save (see the Persistence section further down) has always been
+  // per-browser: clear the cache, switch browsers, or move to a different device
+  // and progress is gone — the exact complaint that prompted this. A real email +
+  // password account, backed by the same Supabase project as the village layer,
+  // fixes that by storing one JSON blob of the save keyed to the player's own
+  // user id in a `player_saves` table (owner-only via RLS). It is strictly
+  // additive: with no account, saveGame()/loadGame() behave exactly as before —
+  // see `syncSaveToCloud` (called from saveGame) and `pullCloudSave`, both of
+  // which quietly no-op when accountState isn't 'signed_in'.
+  let accountState = 'idle'; // idle | working | signed_in | error
+  let accountUser = null;    // { id, email } once signed in
+  let accountError = '';
+  let accountSyncedOnce = false; // guards the one-time "pull cloud save on sign-in" step
+
+  function accountFieldValue(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  async function accountSignUp() {
+    const email = accountFieldValue('account-email');
+    const password = accountFieldValue('account-password');
+    if (!email || !password) { accountError = 'Enter an email and password.'; renderAccountPanel(); return; }
+    if (password.length < 6) { accountError = 'Password needs at least 6 characters.'; renderAccountPanel(); return; }
+    accountState = 'working'; accountError = ''; renderAccountPanel();
+    try {
+      ensureSupabaseClient();
+      const { data, error } = await villageClient.auth.signUp({ email, password });
+      if (error) throw error;
+      // Some Supabase projects require email confirmation before a session exists —
+      // handle both: a session means we're straight in, no session means "check your
+      // email" (still a success, just not signed in yet).
+      if (data && data.session) {
+        await afterAccountSignedIn(data.user);
+      } else {
+        accountState = 'idle';
+        accountError = '';
+        accountSignupPending = true;
+      }
+    } catch (e) {
+      accountState = 'error';
+      accountError = (e && e.message) || String(e);
+    }
+    renderAccountPanel();
+  }
+
+  let accountSignupPending = false;
+
+  async function accountSignIn() {
+    const email = accountFieldValue('account-email');
+    const password = accountFieldValue('account-password');
+    if (!email || !password) { accountError = 'Enter an email and password.'; renderAccountPanel(); return; }
+    accountState = 'working'; accountError = ''; renderAccountPanel();
+    try {
+      ensureSupabaseClient();
+      const { data, error } = await villageClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      await afterAccountSignedIn(data.user);
+    } catch (e) {
+      accountState = 'error';
+      accountError = (e && e.message) || String(e);
+    }
+    renderAccountPanel();
+  }
+
+  async function afterAccountSignedIn(user) {
+    accountUser = { id: user.id, email: user.email };
+    accountState = 'signed_in';
+    accountError = '';
+    // Pull whatever's saved in the cloud for this account and use it as the game
+    // state — this is the actual "continue your progress" moment. If there's
+    // nothing there yet (brand-new account), push the current local state up
+    // instead, so the account starts from wherever this browser already was.
+    const pulled = await pullCloudSave();
+    if (!pulled) {
+      syncSaveToCloud();
+    }
+    accountSyncedOnce = true;
+  }
+
+  async function accountSignOut() {
+    if (!villageClient) return;
+    try { await villageClient.auth.signOut(); } catch (e) { /* ignore — local state below still resets */ }
+    accountUser = null;
+    accountState = 'idle';
+    accountSyncedOnce = false;
+    renderAccountPanel();
+  }
+
+  // Pulls this player's cloud save (if any) and applies it via the same
+  // applySaveData() the local loadGame() uses, then re-renders. Returns true if a
+  // cloud save existed and was applied.
+  async function pullCloudSave() {
+    if (!villageClient || !accountUser) return false;
+    try {
+      const { data, error } = await villageClient
+        .from('player_saves').select('save_data, updated_at').eq('user_id', accountUser.id).maybeSingle();
+      if (error) throw error;
+      if (!data || !data.save_data) return false;
+      applySaveData(data.save_data);
+      saveGame(); // mirror the cloud save into localStorage too, so an offline reload still has it
+      render();
+      logMsg('☁️ Restored your saved progress from your account.');
+      return true;
+    } catch (e) {
+      console.warn('Could not pull cloud save:', (e && e.message) || e);
+      return false;
+    }
+  }
+
+  // Fire-and-forget upload of the current save to `player_saves` — called from
+  // saveGame() itself, so every point the game already saves locally also pushes
+  // to the cloud when signed in. Never awaited from the gameplay path and never
+  // throws outward: a failed cloud sync should never interrupt play, same
+  // philosophy as the village layer's own soft failure.
+  function syncSaveToCloud() {
+    if (accountState !== 'signed_in' || !villageClient || !accountUser) return;
+    villageClient.from('player_saves').upsert({
+      user_id: accountUser.id,
+      save_data: serializeState(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' }).then(({ error }) => {
+      if (error) console.warn('Could not sync save to cloud:', error.message || error);
+    }).catch(e => console.warn('Could not sync save to cloud:', (e && e.message) || e));
+  }
+
+  function renderAccountPanel() {
+    const el = document.getElementById('account-panel');
+    if (!el) return;
+    if (accountState === 'signed_in' && accountUser) {
+      el.innerHTML = `<div class="account-box">
+        <div class="flex justify-between items-center">
+          <span class="text-gold-300 font-medium">👤 ${accountUser.email}</span>
+          <button class="account-btn account-btn-secondary" style="flex:none;padding:4px 10px;" onclick="accountSignOut()">Sign out</button>
+        </div>
+        <div class="account-status">Progress syncs to your account — pick up where you left off on any device.</div>
+      </div>`;
+      return;
+    }
+    const working = accountState === 'working';
+    el.innerHTML = `<div class="account-box">
+      <div class="text-gold-300 font-medium">☁️ Save your progress to an account</div>
+      <div class="account-status">Optional. Without one, progress still saves to this browser only — sign in to keep it across devices or a cleared cache.</div>
+      <input id="account-email" type="email" placeholder="Email" class="account-input" autocomplete="username" ${working ? 'disabled' : ''}>
+      <input id="account-password" type="password" placeholder="Password (6+ characters)" class="account-input" autocomplete="current-password" ${working ? 'disabled' : ''}>
+      <div class="account-btn-row">
+        <button class="account-btn" onclick="accountSignIn()" ${working ? 'disabled' : ''}>${working ? 'Working…' : 'Sign in'}</button>
+        <button class="account-btn account-btn-secondary" onclick="accountSignUp()" ${working ? 'disabled' : ''}>${working ? 'Working…' : 'Create account'}</button>
+      </div>
+      ${accountSignupPending ? '<div class="account-status">Check your email to confirm the new account, then sign in above.</div>' : ''}
+      ${accountError ? `<div class="account-error">${accountError.replace(/</g, '&lt;')}</div>` : ''}
+    </div>`;
   }
 
   function checkLandSightings() {
@@ -2216,7 +2495,18 @@
     landPlot.tiles.forEach((tile, i) => {
       const cell = document.createElement('div');
       cell.className = 'land-tile';
-      cell.style.background = landTileColor(tile);
+      // backgroundColor only (not the `background` shorthand) — the shorthand would
+      // reset backgroundImage to 'none' and wipe out the CSS-level grass texture
+      // (or the pond override just below) set on every .land-tile.
+      cell.style.backgroundColor = landTileColor(tile);
+      // A placed pond (LAND_ELEMENTS) gets real water texture instead of grass —
+      // the concrete "blue water for ponds... rendered properly" ask (Sept 12
+      // 2026 flag). Dry-moisture tiles (bare earth, nothing holding water) get the
+      // dirt texture instead of grass (Sept 13 2026 visual-overhaul pass) — pond
+      // overrides dryness if both are somehow true, since standing water wins visually.
+      // Everything else keeps the default grass texture from CSS.
+      if (tile.element === 'pond') cell.style.backgroundImage = 'var(--land-tex-water)';
+      else if (tile.moistureProfile === 'dry') cell.style.backgroundImage = 'var(--land-tex-dirt)';
       if (i === selectedLandTile) cell.style.boxShadow = 'inset 0 0 0 3px #34d399';
       cell.onclick = () => showLandTileInfo(i);
 
@@ -2228,7 +2518,7 @@
         const w = e.diff >= 2 ? '7px' : '4px';
         return `<div class="cliff-edge cliff-${e.side}" style="--w:${w};"></div>`;
       }).join('');
-      cell.innerHTML = edgeHtml + landGrowthOverlayHtml(tile);
+      cell.innerHTML = edgeHtml + landGrowthOverlayHtml(tile) + landElementIconHtml(tile);
       gridEl.appendChild(cell);
     });
     document.getElementById('land-seed-label').innerText = landPlot.seed;
@@ -2238,7 +2528,6 @@
     updateLandLegend();
     updateLandAspectBanner();
     updateLandVitalityUI();
-    updateLandActionProgressUI();
     checkLandSightings();
     renderLandSightingsJournal();
     showSightingToast();
@@ -2269,6 +2558,26 @@
     return best;
   }
 
+  // Renders the placed design element's icon on its tile (fixes the Sep 12 2026
+  // bug: landElements/tile.element drove water/wind/fit mechanics but nothing ever
+  // painted it). One glyph per tile — elements are single-slot, unlike plant
+  // layers — so no growth/weight math needed, just LAND_ELEMENTS' own icon.
+  function landElementIconHtml(tile) {
+    if (!tile.element) return '';
+    const el = LAND_ELEMENTS[tile.element];
+    if (!el) return '';
+    // Hedge is the one design element with a real matching sprite (the same hedge
+    // bush art used for the understory plant layer, since a live hedge IS an
+    // understory-scale shrub row) — Sept 13 2026 visual-overhaul pass. Everything
+    // else (swale, checkdam, terracing, keyhole, herbspiral, banana circle, nursery)
+    // is an earthwork/layout shape no farm-sprite pack draws, so those still use
+    // their LAND_ELEMENTS emoji glyph pending hand-illustrated or open-source art.
+    if (tile.element === 'hedge') {
+      return `<span class="land-element-icon land-element-sprite" title="${el.name}" style="background-image: var(--land-sprite-understory);"></span>`;
+    }
+    return `<span class="land-element-icon" title="${el.name}">${el.icon}</span>`;
+  }
+
   function landGrowthOverlayHtml(tile) {
     const dominant = landDominantLayer(tile);
     return LAND_LAYERS.map((layer, layerIdx) => {
@@ -2296,7 +2605,12 @@
       const weightScale = LAND_LAYER_VISUAL_WEIGHT[layer] / LAND_LAYER_VISUAL_WEIGHT.canopy;
       const iconSize = ((isDominant ? 11 : 8) + factor * (isDominant ? 5 : 3.5) * weightScale).toFixed(1);
       const iconOpacity = ((isDominant ? 0.55 : 0.42) + factor * (isDominant ? 0.45 : 0.4)).toFixed(2);
-      html += `<span class="land-growth-icon${isDominant ? ' land-growth-icon-dominant' : ''}" style="left:${leftPct}%; top:${topPct}%; font-size:${iconSize}px; opacity:${iconOpacity};">${plant.icon}</span>`;
+      // Real sprite art (Sept 13 2026), keyed by layer not species — see
+      // LAND_LAYER_SPRITE_VAR. Same size/position/opacity math as the emoji it
+      // replaces; plant.name now carries the identity via title (hover), since the
+      // sprite itself can't spell out "Karanj" the way an emoji label implied one.
+      const spriteVar = LAND_LAYER_SPRITE_VAR[layer];
+      html += `<span class="land-growth-sprite${isDominant ? ' land-growth-sprite-dominant' : ''}" title="${plant.name}" style="left:${leftPct}%; top:${topPct}%; width:${iconSize}px; height:${iconSize}px; opacity:${iconOpacity}; background-image: var(${spriteVar});"></span>`;
       // A tile-corner pest badge — scannable across the whole 64-tile grid at a
       // glance, same purpose as the balcony game's pulsing rose border on an
       // infested cell, just sized for a much smaller tile here.
@@ -2440,6 +2754,63 @@
       <div class="land-plant-stack">${stackHtml}${elementHtml}</div>
     `;
     renderLandCrossSection(index);
+    renderLandTilePopup(index);
+  }
+
+  // Farmville-style quick-action bubble anchored on the tapped tile itself (Sept
+  // 13 2026) — surfaces harvest/give-away/pest-clear right where the plant is,
+  // rather than requiring a scroll down to the panel below. Only appears when
+  // there's actually something actionable right now (a mature planting, or one
+  // with pests); an empty/all-seedling tile shows no bubble, same as before.
+  // Always called alongside renderLandTileInfo(index) so the two never drift.
+  function renderLandTilePopup(index) {
+    const popup = document.getElementById('land-tile-popup');
+    if (!popup) return;
+    const gridEl = document.getElementById('land-grid');
+    const cellEl = gridEl && gridEl.children[index];
+    const tile = landPlot.tiles[index];
+    if (!cellEl || !tile) { popup.classList.add('hidden'); return; }
+
+    const actionRows = [];
+    LAND_LAYERS.forEach(layer => {
+      const entry = tile.plants[layer];
+      if (!entry) return;
+      const plant = LAND_PLANTS[entry.key];
+      if (entry.hasPests) {
+        actionRows.push(`<button class="land-popup-action" onclick="event.stopPropagation(); clearLandPest(${index}, '${layer}');">🧴 Clear ${plant.icon} pests</button>`);
+        return;
+      }
+      if (landGrowthStage(entry, plant.growthSpeed) === 'mature') {
+        actionRows.push(`<button class="land-popup-action land-popup-action-coin" onclick="event.stopPropagation(); harvestLandPlant(${index}, '${layer}');">🪙 Harvest ${plant.icon} +${landPlantValue(entry.key)}</button>`);
+        actionRows.push(`<button class="land-popup-action land-popup-action-trust" onclick="event.stopPropagation(); giveLandPlantAway(${index}, '${layer}');">🤝 Give ${plant.icon} +${Math.round(landPlantValue(entry.key) * 0.4)}</button>`);
+      }
+    });
+
+    if (!actionRows.length) { popup.classList.add('hidden'); return; }
+
+    popup.innerHTML = `<button class="land-tile-popup-close" onclick="event.stopPropagation(); document.getElementById('land-tile-popup').classList.add('hidden');" title="Close">✕</button>
+      <div class="land-tile-popup-body">${actionRows.join('')}</div>`;
+    popup.classList.remove('hidden');
+
+    // Position against #land-plot-frame-wrap (not #land-grid — that clips via
+    // overflow:hidden), centered horizontally over the tile. Shows above the tile
+    // by default, flipping below when too close to the wrap's own top edge (a top-
+    // row tile would otherwise push the bubble off-screen above the plot).
+    const wrap = document.getElementById('land-plot-frame-wrap');
+    const wrapRect = wrap.getBoundingClientRect();
+    const cellRect = cellEl.getBoundingClientRect();
+    const centerX = cellRect.left - wrapRect.left + cellRect.width / 2;
+    const tileTop = cellRect.top - wrapRect.top;
+    const showBelow = tileTop < 60;
+    popup.classList.toggle('land-tile-popup-below', showBelow);
+    popup.style.left = `${centerX}px`;
+    if (showBelow) {
+      popup.style.top = `${tileTop + cellRect.height + 8}px`;
+      popup.style.transform = 'translate(-50%, 0)';
+    } else {
+      popup.style.top = `${tileTop - 8}px`;
+      popup.style.transform = 'translate(-50%, -100%)';
+    }
   }
 
   function showLandTileInfo(index) {
@@ -2459,16 +2830,13 @@
       const previewEntry = { key, plantedOn: landDay };
       const previewTile = { ...tile, plants: { ...tile.plants, [layer]: previewEntry } };
       const fit = computePlantFit(previewTile, layer);
-      const cost = landPlantSeedCost(key);
-      const affordable = cost <= landCoins;
-      const costLabel = cost === 0 ? 'own seed · free' : `🪙${cost}`;
-      return `<button class="land-picker-option" ${affordable ? `onclick="placeLandPlant(${index}, '${layer}', '${key}')"` : 'disabled style="opacity:0.4;cursor:not-allowed;"'}>
+      return `<button class="land-picker-option" onclick="placeLandPlant(${index}, '${layer}', '${key}')">
         <span class="land-picker-icon">${plant.icon}</span>
         <span class="land-picker-name-wrap">
-          <span class="land-picker-name">${plant.name} <span class="text-stone-500 font-normal">(${costLabel})</span></span>
+          <span class="land-picker-name">${plant.name}</span>
           <span class="land-picker-tags">${landPlantMetaHtml(plant, fit)}</span>
         </span>
-        <span class="land-picker-fit" title="${affordable ? fit.label : 'Not enough coins'}">${affordable ? fit.icon : '🚫'}</span>
+        <span class="land-picker-fit" title="${fit.label}">${fit.icon}</span>
       </button>`;
     }).join('');
     const layerLabel = LAND_LAYER_INFO[layer].label.toLowerCase();
@@ -2483,13 +2851,6 @@
   }
 
   function placeLandPlant(index, layer, key) {
-    // A fresh market seedling actually costs coins now (Sept 12 2026 — planting was
-    // free, which is why spending never showed up); free when replanting your own
-    // banked lineage, per landPlantSeedCost. Blocked outright if you can't afford it
-    // rather than letting the balance go negative.
-    const cost = landPlantSeedCost(key);
-    if (cost > landCoins) return;
-    landCoins -= cost;
     // Automatically plants from this plot's own seed bank when one exists for this
     // species — the honest default per the seed-sovereignty design (a player who's
     // harvested this species here before is continuing that lineage, not starting a
@@ -2501,7 +2862,6 @@
     recomputeCanopyShade();
     renderLandTileInfo(index);
     renderLandGrid();
-    registerLandAction();
     saveGame();
   }
 
@@ -2521,17 +2881,14 @@
   function openLandElementPicker(index) {
     const tile = landPlot.tiles[index];
     const rows = Object.entries(LAND_ELEMENTS).map(([key, el]) => {
-      const eligible = el.eligible(tile);
-      const affordable = el.cost <= landCoins;
-      const ok = eligible && affordable;
-      const title = !eligible ? 'Not eligible on this tile' : !affordable ? 'Not enough coins' : 'Can place here';
+      const ok = el.eligible(tile);
       return `<button class="land-picker-option" ${ok ? `onclick="placeLandElement(${index}, '${key}')"` : 'disabled style="opacity:0.4;cursor:not-allowed;"'}>
         <span class="land-picker-icon">${el.icon}</span>
         <span class="land-picker-name-wrap">
           <span class="land-picker-name">${el.name} <span class="text-stone-500 font-normal">(🪙${el.cost})</span></span>
           <span class="land-picker-tags"><span class="land-plant-tag">${el.short}</span></span>
         </span>
-        <span class="land-picker-fit" title="${title}">${ok ? '✅' : '🚫'}</span>
+        <span class="land-picker-fit" title="${ok ? 'Can place here' : 'Not eligible on this tile'}">${ok ? '✅' : '🚫'}</span>
       </button>`;
     }).join('');
     document.getElementById('land-plant-picker-title').innerText = 'Choose a design element';
@@ -2540,9 +2897,6 @@
   }
 
   function placeLandElement(index, key) {
-    const el = LAND_ELEMENTS[key];
-    if (el.cost > landCoins) return;
-    landCoins -= el.cost;
     landElements[index] = key;
     applyLandElements();
     recomputeWaterFlow(landPlot.tiles);
@@ -2550,7 +2904,6 @@
     closeLandPlantPicker();
     renderLandTileInfo(index);
     renderLandGrid();
-    registerLandAction();
     saveGame();
   }
 
@@ -2566,12 +2919,10 @@
 
   // The land screen's own time control — advances landDay, recomputes everything
   // that depends on growth stage (canopy shade, pioneer windbreak eligibility), and
-  // re-renders. Deliberately separate from the balcony game's `day`/`advanceDay()`.
-  // Callable manually (the "Let a day pass" button) or automatically once enough
-  // real actions have accumulated — see registerLandAction() below.
+  // re-renders. Deliberately separate from the balcony game's `day`/`advanceDay()` —
+  // the land screen has no tending actions to drive it implicitly yet.
   function advanceLandDay() {
     landDay += 1;
-    landActionProgress = 0;
     recomputeCanopyShade();
     // Water flow is now genuinely perturbed by placed elements (swale/check dam/
     // terracing/pond/banana circle — see LAND_ELEMENTS), so this day-tick call is a
@@ -2580,28 +2931,7 @@
     triggerLandPestOutbreak();
     renderLandGrid();
     if (selectedLandTile !== null) renderLandTileInfo(selectedLandTile);
-    updateLandActionProgressUI();
     saveGame();
-  }
-
-  // Action → day progress, mirroring the balcony game's registerPlotAction. Every
-  // real land action (planting, placing an element, harvesting, giving away,
-  // clearing a pest) counts; every LAND_ACTIONS_PER_DAY of them a day passes on its
-  // own, so time keeps moving even if a player never touches "Let a day pass".
-  function registerLandAction() {
-    landActionProgress++;
-    if (landActionProgress >= LAND_ACTIONS_PER_DAY) {
-      advanceLandDay(); // resets landActionProgress to 0 itself
-    } else {
-      updateLandActionProgressUI();
-    }
-  }
-
-  function updateLandActionProgressUI() {
-    const el = document.getElementById('land-action-progress');
-    if (!el) return;
-    const remaining = LAND_ACTIONS_PER_DAY - landActionProgress;
-    el.innerText = `🕐 ${remaining} action${remaining === 1 ? '' : 's'} until next day (or 🌞 Let a day pass)`;
   }
 
   // ================= LAND PESTS =================
@@ -2672,7 +3002,6 @@
     landPestEverResolved = true;
     renderLandTileInfo(index);
     renderLandGrid();
-    registerLandAction();
     saveGame();
   }
 
@@ -2698,6 +3027,8 @@
     if (!landPlot || landPlot.seed !== landSeed) regenerateLandPlot(landSeed);
     selectedLandTile = null;
     document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
+    const tilePopup = document.getElementById('land-tile-popup');
+    if (tilePopup) tilePopup.classList.add('hidden');
     clearLandCrossSection();
     renderLandGrid();
     saveGame();
@@ -2723,13 +3054,13 @@
     landPestEverResolved = false; // and hasn't weathered/recovered from a pest event yet either
     landLastPestDay = null;
     landSeedBank = {}; // a landrace is adapted to a SPECIFIC plot — new ground, lineage starts over
-    landActionProgress = 0; // fresh ground, fresh action-to-day count too
     regenerateLandPlot(landSeed);
     selectedLandTile = null;
     document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
+    const tilePopup = document.getElementById('land-tile-popup');
+    if (tilePopup) tilePopup.classList.add('hidden');
     clearLandCrossSection();
     renderLandGrid();
-    updateLandActionProgressUI();
     saveGame();
   }
   // ================= END THE LAND (early preview) =================
@@ -3613,7 +3944,7 @@
       hasHarvestedOnce, hintShownSellSave, hintShownGuildEffect, unlockToastShown,
       landSeed, landPlantings, landElements, landDay, landSightings,
       landPestEverResolved, landLastPestDay,
-      landCoins, landTrust, landSeedBank, landActionProgress,
+      landCoins, landTrust, landSeedBank,
     };
   }
 
@@ -3624,16 +3955,15 @@
       // localStorage can fail (private browsing, quota, packaged-WebView quirks) —
       // a save failure should never break gameplay, just silently skip persisting.
     }
+    syncSaveToCloud(); // no-ops silently when not signed in — see the Account section above
   }
 
-  function loadGame() {
-    let raw;
-    try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
-    if (!raw) return false;
-    let s;
-    try { s = JSON.parse(raw); } catch (e) { return false; }
+  // Applies a parsed save object (from localStorage OR a cloud `player_saves` row)
+  // to live game state. Split out of loadGame() on Sept 13 2026 so an account's
+  // cloud save (pullCloudSave, Account section above) can share the exact same
+  // field-by-field restore logic instead of duplicating it.
+  function applySaveData(s) {
     if (!s || typeof s !== 'object') return false;
-
     coins = s.coins; energy = s.energy; currentCity = s.currentCity; harvestMode = s.harvestMode;
     marketShiftCountdown = s.marketShiftCountdown; currentScreen = s.currentScreen;
     tutorialShown = s.tutorialShown; actionProgress = s.actionProgress;
@@ -3657,9 +3987,17 @@
     landCoins = s.landCoins != null ? s.landCoins : 50; // older saves predate the economy — fine to start at the default
     landTrust = s.landTrust || 0;
     landSeedBank = s.landSeedBank || {};
-    landActionProgress = s.landActionProgress || 0; // older saves predate this — fine to start at 0
     normalizeLandPlantings(); // migrates any pre-growth-clock save (plain string plant keys)
     return true;
+  }
+
+  function loadGame() {
+    let raw;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+    if (!raw) return false;
+    let s;
+    try { s = JSON.parse(raw); } catch (e) { return false; }
+    return applySaveData(s);
   }
 
   // Pre-growth-clock saves stored a bare plant key string per layer instead of
@@ -3707,6 +4045,31 @@
     renderMarketBoard();
     selectTool('water');
   }
+
+  renderAccountPanel();
+
+  // Supabase (when its CDN script is reachable) persists a session in this
+  // browser's own localStorage by default, separately from the game's own save —
+  // so a player who signed in once stays signed in on reload without re-entering
+  // a password, same as any normal website login. Best-effort and silent: on a
+  // blocked/offline CDN (this sandbox's own network egress, or a real outage) this
+  // simply never resolves into a signed-in state and the game proceeds exactly as
+  // it always has, save-wise.
+  (async function restoreAccountSession() {
+    try {
+      ensureSupabaseClient();
+      const { data } = await villageClient.auth.getSession();
+      const user = data && data.session && data.session.user;
+      // Anonymous sessions (from the village "Connect" button) have no email and
+      // should never surface as a signed-in account here.
+      if (user && user.email) {
+        await afterAccountSignedIn(user);
+        renderAccountPanel();
+      }
+    } catch (e) {
+      // Supabase script not loaded / no network — account layer just stays 'idle'.
+    }
+  })();
 </script>
 </body>
 </html>
