@@ -685,6 +685,7 @@
 </style>
 </head>
 <body class="bg-moss-950 text-stone-100 font-body min-h-screen flex flex-col items-center p-3">
+  <button id="sound-toggle" onclick="landToggleMute()" aria-label="Sound on" title="Sound on/off" style="position:fixed;top:8px;right:8px;z-index:60;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.2);font-size:16px;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.3);">🔊</button>
 
   <!-- ============ TITLE SCREEN ============ -->
   <div id="screen-title" class="w-full max-w-md rounded-3xl px-3 flex flex-col items-center justify-center gap-4 py-6 text-center" style="min-height: 88vh;">
@@ -711,7 +712,7 @@
       .title-cloud { animation: title-drift 22s linear infinite; } @keyframes title-drift { from { transform: translateX(-40px); } to { transform: translateX(60px); } }
     </style>
     <div class="title-scene">
-      <img src="data:image/png;base64,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" alt="A sunny plot with fruit trees and berry bushes" class="pix" style="width:100%;height:auto;">
+      <img src="data:image/png;base64,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" alt="A seed packet, a young sprout and an apple tree on patches of soil" class="pix" style="width:100%;height:auto;">
       <!-- Logo: hand-authored mark — a sprout rising from a tilled pocket of earth under a sun -->
     </div>
     <div>
@@ -1926,7 +1927,7 @@
   // landraceBonus in computePlantFit). Reset on reroll (a new plot is genuinely
   // different ground, per rerollLand's own existing plantings/elements reset logic)
   // but coins/trust are the player's own resources and carry across a reroll.
-  let landCoins = 50;
+  let landCoins = 60;
   let landTrust = 0;
   let landSeedBank = {}; // { [plantKey]: highest generation banked }
 
@@ -1956,6 +1957,7 @@
     const generation = entry.generation || 0;
     const coinsEarned = Math.round(landPlantValue(entry.key) * (1 + 0.1 * Math.min(generation, 5)));
     landCoins += coinsEarned;
+    landSound('harvest');
     landSeedBank[entry.key] = Math.min(6, generation + 1);
     if (landTutorial) landTutorial.acted = true;
     removeLandPlant(index, layer);
@@ -1975,6 +1977,7 @@
     if (landGrowthStage(entry, plant.growthSpeed) !== 'mature') return;
     const trustEarned = Math.round(landPlantValue(entry.key) * 0.4);
     landTrust += trustEarned;
+    landSound('gift');
     if (landTutorial) landTutorial.acted = true;
     removeLandPlant(index, layer);
     return trustEarned;
@@ -2377,6 +2380,7 @@
     landPendingSightingToast = null;
     const el = document.getElementById('land-sighting-toast');
     if (!el) return;
+    landSound('chirp');
     el.innerHTML = `<span class="land-sighting-toast-icon">${landCreatureArt(c, 28, false)}</span>
       <span class="land-sighting-toast-text"><b>${c.name}</b><br>${c.flavor}</span>`;
     el.classList.remove('hidden');
@@ -2476,7 +2480,7 @@
   // (Oct 2026, see placeLandElement). Removing one gives no refund.
   const LAND_ELEMENTS = {
     swale: {
-      name: 'Swale / Trench', icon: '〰️', cost: 40,
+      name: 'Swale / Trench', icon: '〰️', cost: 30,
       short: 'Flattens local flow; raises moisture downhill of it.',
       // "Requires a 2+ tile run with an elevation drop" — simplified to a single-tile
       // placement check: some real downhill neighbor to actually drain toward.
@@ -2486,45 +2490,45 @@
       }),
     },
     checkdam: {
-      name: 'Check Dam / Gully Plug', icon: '🧱', cost: 50,
+      name: 'Check Dam / Gully Plug', icon: '🧱', cost: 40,
       short: 'Blocks a flow channel; raises moisture upstream of it.',
       // The doc's own placement rule, now a literal checkable condition per the
       // Section 4 cross-reference note: a real confluence tile.
       eligible: (tile) => tile.flowAccum >= 3,
     },
     terracing: {
-      name: 'Terracing', icon: '🪜', cost: 60,
+      name: 'Terracing', icon: '🪜', cost: 45,
       short: 'Steps a slope flat — removes its elevation penalty here.',
       eligible: (tile) => tile.elevation >= 1 && !tile.terraced,
     },
     hedge: {
-      name: 'Live Hedge / Windbreak', icon: '🌾', cost: 35,
+      name: 'Live Hedge / Windbreak', icon: '🌾', cost: 25,
       short: 'Shelters neighboring tiles from wind, like an established pioneer plant.',
       eligible: () => true,
     },
     keyhole: {
-      name: 'Keyhole Bed', icon: '🗝️', cost: 25,
+      name: 'Keyhole Bed', icon: '🗝️', cost: 20,
       short: 'Small footprint, strong edge-effect — more forgiving of a rough terrain match.',
       eligible: () => true,
     },
     herbspiral: {
-      name: 'Herb Spiral', icon: '🌀', cost: 30,
+      name: 'Herb Spiral', icon: '🌀', cost: 25,
       short: 'Several sun/moisture microzones in one footprint.',
       eligible: () => true,
     },
     bananacircle: {
-      name: 'Banana Circle', icon: '🍌', cost: 45,
+      name: 'Banana Circle', icon: '🍌', cost: 35,
       short: 'A moisture-rich sink that boosts a ring of surrounding tiles.',
       eligible: (tile) => tile.elevation <= 1 || tile.moistureProfile !== 'dry',
     },
     pond: {
-      name: 'Pond', icon: '💧', cost: 70,
+      name: 'Pond', icon: '💧', cost: 50,
       short: 'Strong vitality boost; a dedicated wildlife draw; supports thirsty plants.',
       eligible: (tile) => tile.elevation <= 1 && !LAND_LAYERS.some(l => tile.plants[l]),
       whyNot: (tile) => LAND_LAYERS.some(l => tile.plants[l]) ? 'Clear the plants off this tile first' : 'Ponds need low ground (Tier 0-1)',
     },
     nursery: {
-      name: 'Nursery', icon: '🌱', cost: 30,
+      name: 'Nursery', icon: '🌱', cost: 25,
       short: 'A home for saved seed lines between plantings (seed-sovereignty economy, coming next).',
       eligible: () => true,
     },
@@ -2779,6 +2783,7 @@
   function landTutorialNext() {
     if (!landTutorial || landTutorial.done) return;
     if (landTutorial.step === 0 && !landTutorial.granted) { landCoins += LAND_TUTORIAL_FUND; landTutorial.granted = true; renderLandGrid(); }
+    landSound('step');
     landTutorial.step++;
     if (landTutorial.step >= LAND_TUTORIAL_STEPS.length) landTutorial.done = true;
     renderLandTutorial(); saveGame();
@@ -3136,12 +3141,61 @@
     renderLandGrid();
   }
 
+  // ---- Sound (Oct 2026) ----
+  // Tiny synthesized effects through WebAudio: no audio files, so nothing to license or
+  // download. The context is created on the first tap (browsers require a gesture).
+  // Mute choice is remembered in this browser.
+  let landMuted = false;
+  try { landMuted = localStorage.getItem('pp_muted') === '1'; } catch (e) {}
+  let landAudio = null;
+  function landSound(kind) {
+    if (landMuted) return;
+    try {
+      if (!landAudio) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; landAudio = new AC(); }
+      if (landAudio.state === 'suspended') landAudio.resume();
+      const ctx = landAudio, t0 = ctx.currentTime;
+      const tone = (f0, f1, start, dur, type, vol) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type || 'sine';
+        o.frequency.setValueAtTime(f0, t0 + start);
+        if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + start + dur);
+        g.gain.setValueAtTime(0.0001, t0 + start);
+        g.gain.exponentialRampToValueAtTime(vol || 0.12, t0 + start + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
+        o.connect(g); g.connect(ctx.destination); o.start(t0 + start); o.stop(t0 + start + dur + 0.02);
+      };
+      const S = {
+        plant:   () => { tone(260, 520, 0, 0.12, 'sine', 0.16); tone(700, 700, 0.1, 0.08, 'sine', 0.05); },
+        build:   () => { tone(120, 70, 0, 0.16, 'triangle', 0.2); tone(523, 523, 0.12, 0.12, 'sine', 0.09); tone(659, 659, 0.2, 0.18, 'sine', 0.09); },
+        coin:    () => { tone(988, 988, 0, 0.07, 'square', 0.05); tone(1319, 1319, 0.07, 0.16, 'square', 0.05); },
+        harvest: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, i * 0.07, 0.14, 'triangle', 0.1)); },
+        gift:    () => { tone(440, 660, 0, 0.16, 'sine', 0.1); tone(660, 880, 0.12, 0.2, 'sine', 0.1); },
+        error:   () => { tone(150, 110, 0, 0.18, 'sawtooth', 0.07); },
+        day:     () => { tone(784, 784, 0, 0.3, 'sine', 0.06); tone(988, 988, 0.12, 0.34, 'sine', 0.05); },
+        remove:  () => { tone(300, 150, 0, 0.12, 'triangle', 0.1); },
+        chirp:   () => { [0, 0.11, 0.24].forEach((d, i) => tone(2200 + i * 300, 3200 + i * 200, d, 0.08, 'sine', 0.06)); },
+        step:    () => { tone(660, 880, 0, 0.1, 'sine', 0.07); },
+      };
+      (S[kind] || (() => {}))();
+    } catch (e) { /* audio is a nicety, never break the game over it */ }
+  }
+  function landToggleMute() {
+    landMuted = !landMuted;
+    try { localStorage.setItem('pp_muted', landMuted ? '1' : '0'); } catch (e) {}
+    const b = document.getElementById('sound-toggle');
+    if (b) { b.textContent = landMuted ? '🔇' : '🔊'; b.setAttribute('aria-label', landMuted ? 'Sound off' : 'Sound on'); }
+    landSound('step');
+  }
+
   // ---- Costs & feedback (Oct 2026) ----
   // Seeds cost coins: half the plant's harvest value, and a seed saved from this
   // plot's own bank costs 40% less (the seed-sovereignty payoff the tutorial promises).
   function landPlantSeedCost(key) {
-    const base = Math.max(4, Math.round(landPlantValue(key) * 0.5));
-    return landSeedBank[key] ? Math.max(2, Math.round(base * 0.6)) : base;
+    // Balance pass (Oct 2026): a seed costs 40% of what the mature plant sells for, so every
+    // cycle nets a real profit even on the cheapest groundcovers (was 50% with a floor of 4,
+    // which made groundcovers break even).
+    const base = Math.max(2, Math.round(landPlantValue(key) * 0.4));
+    return landSeedBank[key] ? Math.max(1, Math.round(base * 0.6)) : base;
   }
   function landIsWater(tile) { return tile.element === 'pond'; }
 
@@ -3193,6 +3247,7 @@
     if (!el) return;
     el.innerHTML = html;
     el.classList.toggle('bad', !!bad);
+    if (bad) landSound('error');
     el.classList.add('show');
     clearTimeout(landFeedback._t);
     landFeedback._t = setTimeout(() => el.classList.remove('show'), bad ? 3500 : 6000);
@@ -3265,6 +3320,7 @@
     const d = landDiff(before, landSnapshot());
     landFlashFromDiff(d, index);
     const ph = landDiffPhrases(d);
+    landSound('plant');
     landFeedback(`${plant.icon} <b>${plant.name}</b> planted for 🪙${cost}. ${fit.icon} ${fit.label} here.${ph.length ? ' Nearby: ' + ph.join(', ') + '.' : ''} 🪙${landCoins} left.`);
     landCoinFloat(-cost);
     renderLandTileInfo(index);
@@ -3340,6 +3396,7 @@
     const d = landDiff(before, landSnapshot());
     landFlashFromDiff(d, index);
     const ph = landDiffPhrases(d);
+    landSound('build');
     landFeedback(`${el.icon} <b>${el.name}</b> built for 🪙${el.cost}. ${ph.length ? ph.join(', ') + '.' : 'No change to the neighbouring ground; it helps plants on this tile.'} 🪙${landCoins} left.`);
     landCoinFloat(-el.cost);
     renderLandTileInfo(index);
@@ -3361,9 +3418,21 @@
   // that depends on growth stage (canopy shade, pioneer windbreak eligibility), and
   // re-renders. Deliberately separate from the balcony game's `day`/`advanceDay()` —
   // the land screen has no tending actions to drive it implicitly yet.
+  // Soft-lock guard: if you cannot afford even the cheapest seed and nothing on the plot
+  // can be harvested yet, the neighbours leave a few coins so the game never dead-ends.
+  function landRescueIfBroke() {
+    const cheapest = Math.min(...Object.keys(LAND_PLANTS).map(k => landPlantSeedCost(k)));
+    if (landCoins >= cheapest) return;
+    const anyMature = landPlot.tiles.some(t => LAND_LAYERS.some(l => t.plants[l] && landGrowthStage(t.plants[l], LAND_PLANTS[t.plants[l].key].growthSpeed) === 'mature'));
+    if (anyMature) return;
+    landCoins += 10;
+    landFeedback('🤝 Neighbours left a few coins at your gate: +🪙10.');
+  }
   function advanceLandDay() {
     landDay += 1;
     recomputeCanopyShade();
+    landSound('day');
+    landRescueIfBroke();
     // Water flow is now genuinely perturbed by placed elements (swale/check dam/
     // terracing/pond/banana circle — see LAND_ELEMENTS), so this day-tick call is a
     // real recompute, not the no-op it was before elements existed.
@@ -4425,7 +4494,7 @@
     landSightings = s.landSightings || {}; // older saves predate the sighting journal — fine to start empty
     landPestEverResolved = !!s.landPestEverResolved; // older saves predate pests — fine to start false
     landLastPestDay = s.landLastPestDay != null ? s.landLastPestDay : null;
-    landCoins = s.landCoins != null ? s.landCoins : 50; // older saves predate the economy — fine to start at the default
+    landCoins = s.landCoins != null ? s.landCoins : 60; // older saves predate the economy — fine to start at the default
     landTrust = s.landTrust || 0;
     landSeedBank = s.landSeedBank || {};
     // Older saves predate the tutorial: anyone who already planted has no need for it.
@@ -4480,6 +4549,7 @@
     selectTool('water');
   }
 
+  (function(){ const b=document.getElementById('sound-toggle'); if(b&&landMuted){ b.textContent='🔇'; b.setAttribute('aria-label','Sound off'); } })();
   renderAccountPanel();
 
   // Supabase (when its CDN script is reachable) persists a session in this
