@@ -108,6 +108,42 @@
     85%  { opacity: 1; transform: translateY(0) scale(1); }
     100% { opacity: 0; transform: translateY(-4px) scale(0.96); }
   }
+  /* Action feedback (Oct 2026) — every placement now says what it cost and what it
+     changed, flashes the tiles it affected, and floats the coin spend. */
+  .land-feedback {
+    position: absolute; left: 6px; right: 6px; bottom: 6px; z-index: 6;
+    background: rgba(12,26,15,0.96); border: 1px solid rgba(52,211,153,0.6);
+    border-radius: 8px; padding: 6px 9px; font-size: 10px; line-height: 1.35; color: #e7e5e4;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.55); pointer-events: none;
+    opacity: 0; transition: opacity .25s ease;
+  }
+  .land-feedback.show { opacity: 1; }
+  .land-feedback.bad { border-color: rgba(248,113,113,0.8); color: #fecaca; }
+  .land-tile-flash { animation: land-flash 1.8s ease-out 1; z-index: 4; }
+  @keyframes land-flash {
+    0% { box-shadow: inset 0 0 0 3px #fde047, 0 0 12px 3px rgba(253,224,71,0.9); filter: brightness(1.5); }
+    100% { box-shadow: inset 0 0 0 0 rgba(253,224,71,0), 0 0 0 0 rgba(253,224,71,0); filter: brightness(1); }
+  }
+  .land-flash-badge {
+    position: absolute; top: 1px; left: 50%; transform: translateX(-50%); z-index: 7;
+    font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px #000;
+    animation: land-badge-rise 1.8s ease-out forwards; pointer-events: none; white-space: nowrap;
+  }
+  @keyframes land-badge-rise { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -12px); } }
+  .land-tile-terraced::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,0.0) 0 6px, rgba(60,40,15,0.45) 6px 8px);
+  }
+  .land-tile-popin { animation: land-popin .45s cubic-bezier(.2,1.6,.4,1) 1; }
+  @keyframes land-popin { 0% { transform: scale(.6); } 100% { transform: scale(1); } }
+  .land-coin-float {
+    position: fixed; z-index: 9999; font-weight: 800; font-size: 14px; color: #fca5a5;
+    text-shadow: 0 1px 3px #000; pointer-events: none; animation: land-coin-up 1.2s ease-out forwards;
+  }
+  @keyframes land-coin-up { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-28px); } }
+  .land-picker-option[disabled] .land-picker-fit { font-size: 9px; }
+  .land-water-note { padding: 8px; font-size: 10px; color: #93c5fd; background: rgba(30,64,110,0.35); border: 1px solid rgba(96,165,250,0.4); border-radius: 8px; margin-bottom: 4px; }
+  .land-effect-note { margin-top: 4px; font-size: 10px; color: #fcd34d; }
   /* Cross-section (Sept 2026) — a side-view stack of the selected tile's 6 layers,
      canopy at top down to root underground, so the real vertical structure of a
      food-forest tile is something you can actually see, not just read as a list of
@@ -155,7 +191,13 @@
     background-size: 1600% 100%;
     background-position: 0 0;
     image-rendering: pixelated;
-    box-shadow: inset 0 0 0 1px rgba(40,70,20,0.22);
+    /* Oct 2026: no square outline per tile (it read as a chessboard over the art).
+       A single dot sits on each tile corner instead, so the grid is a dot lattice. */
+  }
+  .land-tile::before {
+    content: ''; position: absolute; top: -1.5px; left: -1.5px; width: 3px; height: 3px;
+    border-radius: 50%; background: rgba(255,255,240,0.55); pointer-events: none; z-index: 2;
+    box-shadow: 0 0 0 0.5px rgba(30,50,15,0.35);
   }
   .land-tutorial {
     position: sticky; top: 4px; z-index: 40;
@@ -263,8 +305,8 @@
      glyph keeps it legible against every terrain color, same trick as the growth
      blobs use for plants. */
   .land-element-icon {
-    position: absolute; bottom: 1px; left: 1px; z-index: 3;
-    font-size: 11px; line-height: 1; pointer-events: none;
+    position: absolute; bottom: 2px; left: 2px; z-index: 3;
+    font-size: 18px; line-height: 1; pointer-events: none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.75), 0 0 3px rgba(0,0,0,0.5);
   }
   /* Sprite variant of the above (hedge only, Sept 13 2026) — background-image +
@@ -645,15 +687,37 @@
 <body class="bg-moss-950 text-stone-100 font-body min-h-screen flex flex-col items-center p-3">
 
   <!-- ============ TITLE SCREEN ============ -->
-  <div id="screen-title" class="w-full max-w-md flex flex-col items-center justify-center gap-5 py-10 text-center" style="min-height: 70vh;">
-    <div class="text-5xl">🌱</div>
+  <div id="screen-title" class="w-full max-w-md rounded-3xl px-3 flex flex-col items-center justify-center gap-4 py-6 text-center" style="min-height: 88vh;">
+    <style>
+      body:has(#screen-title:not(.hidden)) { background: linear-gradient(#e6f4cf 0%, #f6f1d4 100%) fixed !important; }
+      #screen-title h1 { color: #2f6b2f !important; text-shadow: 0 2px 0 rgba(255,255,255,.7); }
+      #screen-title h1 + p { color: #4b5d3a !important; }
+      #screen-title .title-scene { border-color: #f2b632; box-shadow: 0 8px 20px rgba(60,90,30,.28); }
+      #screen-title #account-panel .account-box { background: rgba(255,255,255,.75); border: 1px solid #cfdcae; }
+      #screen-title #account-panel .account-box > div:first-child, #screen-title #account-panel .account-box span { color: #3d5a2a !important; }
+      #screen-title #account-panel .account-status { color: #6b7a58 !important; }
+      #screen-title #account-panel .account-input { background: #fff; color: #2b3a1f; border: 1px solid #c4d3a0; }
+      #screen-title #account-panel .account-input::placeholder { color: #8a9877; }
+      #screen-title #account-panel .account-btn { background: #fff4cf; color: #5b4300; border: 1px solid #f2b632; }
+      #screen-title #account-panel .account-btn-secondary { background: #fff; color: #4b5d3a; border: 1px solid #c4d3a0; }
+      #screen-title #title-start-btn { background: #f59e0b; color: #3b2a00; font-size: 17px; padding: 14px 40px; box-shadow: 0 5px 0 #b86f00, 0 10px 18px rgba(120,80,0,.3); }
+      #screen-title #title-start-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b86f00; }
+      .title-scene { width: 100%; border-radius: 18px; overflow: hidden; position: relative; background: linear-gradient(#bde8f5 0%, #f9f1c4 62%, #cfe9a0 100%); box-shadow: 0 6px 18px rgba(0,0,0,.35); border: 2px solid #fbbf24; }
+      .pix { image-rendering: pixelated; display: block; }
+      .title-fruits { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 5px; }
+      .title-fruits img { height: 44px; width: auto; animation: title-bob 2.6s ease-in-out infinite; filter: drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
+      .title-fruits img:nth-child(2n) { animation-delay: .5s; } .title-fruits img:nth-child(3n) { animation-delay: 1.1s; }
+      @keyframes title-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+      .title-cloud { animation: title-drift 22s linear infinite; } @keyframes title-drift { from { transform: translateX(-40px); } to { transform: translateX(60px); } }
+    </style>
+    <div class="title-scene">
+      <img src="data:image/png;base64,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" alt="A sunny plot with fruit trees and berry bushes" class="pix" style="width:100%;height:auto;">
+      <!-- Logo: hand-authored mark — a sprout rising from a tilled pocket of earth under a sun -->
+    </div>
     <div>
       <h1 class="font-display text-3xl font-bold text-gold-400 tracking-wide">Pocket Permaculture</h1>
-      <p class="text-stone-300 text-sm font-semibold mt-2">Steward a living plot. Real permaculture, real restoration.</p>
+      <p class="text-stone-200 text-sm font-semibold mt-1">Grow a food forest. Welcome the wildlife home.</p>
     </div>
-    <p class="text-stone-400 text-xs px-6 leading-relaxed">Design a food forest across a real plot of land — shape water, wind and sun, stack a real guild of plants, and watch wildlife return as your ground genuinely heals. Tend it with neighbours doing the same, at your own pace.</p>
-    <p class="text-stone-500 text-[10px] px-6">A living plot. A village of neighbours. Restoration, not just farming 🌳</p>
-
     <!-- Account / cloud save (Sept 13 2026) — a real login so progress survives a
          cleared cache or a switch to a different browser/device, instead of living
          only in this browser's localStorage. Entirely optional: with no account,
@@ -725,6 +789,7 @@
              sighting, so it's felt in the moment rather than only ever discovered
              later in the Field Notebook. See queueSightingToast()/showSightingToast(). -->
         <div id="land-sighting-toast" class="land-sighting-toast hidden"></div>
+        <div id="land-feedback" class="land-feedback" aria-live="polite"></div>
         <div id="land-reveal" class="land-reveal hidden" role="dialog" aria-live="polite"></div>
 
         <!-- Tile action popup (Sept 13 2026) — Farmville-style: tap a tile with
@@ -2407,9 +2472,8 @@
   // core-loop section). One element per tile (`tile.element`), separate from the
   // per-layer plant stack. Costs are explicit first-pass placeholders per the doc's
   // own note ("Costs/radii below are first-pass placeholders for balance at build
-  // time") — real coin deduction lands with the land economy pass; for now placing
-  // one is free so the mechanic can be evaluated on its own before it's gated by a
-  // currency that doesn't exist on this screen yet.
+  // time") — placing one now really spends these coins
+  // (Oct 2026, see placeLandElement). Removing one gives no refund.
   const LAND_ELEMENTS = {
     swale: {
       name: 'Swale / Trench', icon: '〰️', cost: 40,
@@ -2456,7 +2520,8 @@
     pond: {
       name: 'Pond', icon: '💧', cost: 70,
       short: 'Strong vitality boost; a dedicated wildlife draw; supports thirsty plants.',
-      eligible: (tile) => tile.elevation <= 1,
+      eligible: (tile) => tile.elevation <= 1 && !LAND_LAYERS.some(l => tile.plants[l]),
+      whyNot: (tile) => LAND_LAYERS.some(l => tile.plants[l]) ? 'Clear the plants off this tile first' : 'Ponds need low ground (Tier 0-1)',
     },
     nursery: {
       name: 'Nursery', icon: '🌱', cost: 30,
@@ -2560,7 +2625,7 @@
     dirs.forEach(d => {
       const n = landTileAt(tile.r + d.dr, tile.c + d.dc);
       if (!n) return; // plot boundary — the outer frame already marks this
-      const diff = tile.elevation - n.elevation;
+      const diff = effectiveElevation(tile) - effectiveElevation(n);
       if (diff > 0) edges.push({ side: d.side, diff });
     });
     return edges;
@@ -2644,7 +2709,14 @@
       : 'Dries out faster than the wetter ground nearby — better suited to hardy, drought-tolerant planting (the "Bund" zone).';
     return `<div class="font-bold text-gold-300 mb-1">Tier ${tile.elevation} · ${elevLabel}</div>
       <div class="text-stone-300 mb-1">${daylightLabel}, ${windLabel}.</div>
-      <div class="text-stone-400">${waterNote}</div>`;
+      <div class="text-stone-400">${waterNote}</div>${landSlopeNote(tile)}`;
+  }
+  // Makes the elevation penalty (and terracing's removal of it) something you can read
+  // on the tile itself, before and after.
+  function landSlopeNote(tile) {
+    if (tile.terraced) return `<div class="land-effect-note">🪜 Terraced: counts as Tier ${effectiveElevation(tile)} (was Tier ${tile.elevation}) — slope penalty removed here.</div>`;
+    if (tile.elevation >= 1) return `<div class="land-effect-note">⛰️ Slope penalty: plants that want a different tier than Tier ${tile.elevation} lose fit here. Terracing (🪙${LAND_ELEMENTS.terracing.cost}) steps this tile down one tier.</div>`;
+    return '';
   }
 
   // Ground atlas index: 0-6 grass variants, 7-11 sand/dirt, 12-15 water frames
@@ -2666,7 +2738,7 @@
   // visible bank instead of a hard square.
   function landShoreShadow(tile) {
     const sides = [['top',-1,0],['bottom',1,0],['left',0,-1],['right',0,1]];
-    const sh = ['inset 0 0 0 1px rgba(40,70,20,0.22)'];
+    const sh = [];
     sides.forEach(([side,dr,dc]) => {
       const n = landTileAt(tile.r + dr, tile.c + dc);
       if (n && n.element === 'pond') return;
@@ -2692,10 +2764,10 @@
   const LAND_TUTORIAL_STEPS = [
     { title: 'Welcome to your plot', body: 'You are restoring a real piece of land. Green ground is grass, sand is dry earth, and blue is water. Tap Show me for a two-minute walk-through. You can skip it any time.', manual: 'Show me' },
     { title: 'Look at the land', body: 'Tap any tile to observe it. The panel below the map tells you how wet, sunny and windy it is. Good planting starts with reading the ground.', done: () => selectedLandTile !== null },
-    { title: 'Plant a canopy tree', body: 'In the panel below, tap the Canopy row and pick Mexican Lilac (Glyricidia). It grows fast, fixes nitrogen and shelters everything else. We added a small starter fund of 🪙80 so you can afford it.', done: () => landTileList().some(t => t.plants.canopy) },
+    { title: 'Plant a canopy tree', body: 'In the panel below, tap the Canopy row and pick Mexican Lilac (Glyricidia). It grows fast, fixes nitrogen and shelters everything else. Seeds cost coins, so we added a starter fund of 🪙80.', done: () => landTileList().some(t => t.plants.canopy) },
     { title: 'Build a guild', body: 'Plants in different layers help each other. On the same tile, add something to another layer, such as a Climber or Groundcover, and watch the fit score. A tile with several layers is a food forest in miniature.', done: () => landAnyPlanted(2) },
-    { title: 'Shape the water', body: 'Tap a tile and choose "Place a design element". A pond holds water and attracts wildlife, a swale slows runoff so the soil can drink.', done: () => landTileList().some(t => t.element) },
-    { title: 'Let time pass', body: 'Every few actions a day passes by itself, or tap "Let a day pass". Watch your seedling grow into an established plant and then a mature one.', done: () => landTileList().some(t => LAND_LAYERS.some(l => t.plants[l] && landGrowthStage(t.plants[l], LAND_PLANTS[t.plants[l].key].growthSpeed) === 'mature')) },
+    { title: 'Shape the water', body: 'Tap a tile and choose "Place a design element". Each costs coins. The list shows what it would change before you pay. A swale slows runoff so the soil can drink; a pond attracts wildlife.', done: () => landTileList().some(t => t.element) },
+    { title: 'Let time pass', body: 'Tap "Let a day pass". Watch your seedling grow into an established plant and then a mature one.', done: () => landTileList().some(t => LAND_LAYERS.some(l => t.plants[l] && landGrowthStage(t.plants[l], LAND_PLANTS[t.plants[l].key].growthSpeed) === 'mature')) },
     { title: 'Harvest or share', body: 'Tap a mature plant. Harvest it for coins, or give it away for trust with your village. Harvesting saves its seed, so your next planting of it is cheaper and stronger.', done: () => !!(landTutorial && landTutorial.acted) },
     { title: 'You are ready', body: 'As your plot grows greener, zone vitality rises and wildlife starts to visit. Check the Field Notebook to see who has arrived. Good luck, steward.', manual: 'Start restoring' },
   ];
@@ -2765,9 +2837,14 @@
         return `<div class="cliff-edge cliff-${e.side}" style="--w:${w};"></div>`;
       }).join('');
       const tintHtml = landViewMode === 'world' ? '' : `<div class="land-tint" style="background:${landOverlayColor(tile)};"></div>`;
-      cell.innerHTML = tintHtml + edgeHtml + landGrowthOverlayHtml(tile) + landElementIconHtml(tile);
+      if (tile.terraced) cell.classList.add('land-tile-terraced');
+      const flashBadge = landFlash && landFlash.get(i);
+      if (flashBadge) cell.classList.add('land-tile-flash');
+      cell.innerHTML = tintHtml + edgeHtml + landGrowthOverlayHtml(tile) + landElementIconHtml(tile)
+        + (flashBadge ? `<span class="land-flash-badge">${flashBadge}</span>` : '');
       gridEl.appendChild(cell);
     });
+    landFlash = null;
     document.getElementById('land-seed-label').innerText = landPlot.seed;
     document.getElementById('land-day-label').innerText = landDay;
     document.getElementById('land-coins-label').innerText = landCoins;
@@ -2920,6 +2997,7 @@
     const stackHtml = LAND_LAYERS.map(layer => {
       const entry = tile.plants[layer];
       if (!entry) {
+        if (landIsWater(tile)) return '';
         const info = LAND_LAYER_INFO[layer];
         return `<button class="land-plant-add" onclick="openLandPlantPicker(${index}, '${layer}')">+ ${info.icon} ${info.label}</button>`;
       }
@@ -2987,9 +3065,10 @@
     } else {
       elementHtml = `<button class="land-plant-add" onclick="openLandElementPicker(${index})">+ 🏔️ Place a design element</button>`;
     }
+    const waterNote = landIsWater(tile) ? '<div class="land-water-note">🌊 Open water — nothing can be planted in a pond. Remove the pond (no refund) to plant here.</div>' : '';
     document.getElementById('land-tile-info').innerHTML = `
       ${describeLandTile(tile)}
-      <div class="land-plant-stack">${stackHtml}${elementHtml}</div>
+      <div class="land-plant-stack">${waterNote}${stackHtml}${elementHtml}</div>
     `;
     renderLandCrossSection(index);
     renderLandTilePopup(index);
@@ -3057,9 +3136,83 @@
     renderLandGrid();
   }
 
+  // ---- Costs & feedback (Oct 2026) ----
+  // Seeds cost coins: half the plant's harvest value, and a seed saved from this
+  // plot's own bank costs 40% less (the seed-sovereignty payoff the tutorial promises).
+  function landPlantSeedCost(key) {
+    const base = Math.max(4, Math.round(landPlantValue(key) * 0.5));
+    return landSeedBank[key] ? Math.max(2, Math.round(base * 0.6)) : base;
+  }
+  function landIsWater(tile) { return tile.element === 'pond'; }
+
+  // One compact picture of the plot's derived state, used to show what a change did.
+  const LAND_MOIST_RANK = { dry: 0, moist: 1, runoff: 2 };
+  function landSnapshot() {
+    return landPlot.tiles.map(t => {
+      const fits = {};
+      LAND_LAYERS.forEach(l => { if (t.plants[l]) fits[l] = computePlantFit(t, l).mismatches; });
+      return { moist: LAND_MOIST_RANK[t.moistureProfile], elev: effectiveElevation(t), wind: t.windExposure, shade: !!t.canopyShade, fits };
+    });
+  }
+  function landDiff(a, b) {
+    const d = { wetter: [], drier: [], flatter: [], sheltered: [], shaded: [], better: [], worse: [] };
+    a.forEach((x, i) => {
+      const y = b[i];
+      if (y.moist > x.moist) d.wetter.push(i); else if (y.moist < x.moist) d.drier.push(i);
+      if (y.elev < x.elev) d.flatter.push(i);
+      if (x.wind === 'open' && y.wind !== 'open') d.sheltered.push(i);
+      if (!x.shade && y.shade) d.shaded.push(i);
+      Object.keys(y.fits).forEach(l => {
+        if (x.fits[l] == null) return;
+        if (y.fits[l] < x.fits[l]) d.better.push(i); else if (y.fits[l] > x.fits[l]) d.worse.push(i);
+      });
+    });
+    return d;
+  }
+  const LAND_DIFF_BADGE = { wetter: '💧', drier: '🏜️', flatter: '🪜', sheltered: '🌬️', shaded: '🌳', better: '🙂↑', worse: '😕↓' };
+  function landDiffPhrases(d) {
+    const n = (arr, one, many) => arr.length ? `${arr.length} ${arr.length === 1 ? one : many}` : null;
+    return [
+      d.flatter.length ? `🪜 slope penalty removed (this ground now counts one tier flatter)` : null,
+      n(d.wetter, '💧 tile gets wetter', '💧 tiles get wetter'),
+      n(d.drier, '🏜️ tile gets drier', '🏜️ tiles get drier'),
+      n(d.sheltered, '🌬️ tile is sheltered from wind', '🌬️ tiles are sheltered from wind'),
+      n(d.shaded, '🌳 tile gets shade', '🌳 tiles get shade'),
+      n(d.better, '🙂 plant fits better', '🙂 plants fit better'),
+      n(d.worse, '😕 plant fits worse', '😕 plants fit worse'),
+    ].filter(Boolean);
+  }
+  let landFlash = null; // Map<tileIndex, badge>, consumed by the next renderLandGrid
+  function landFlashFromDiff(d, origin) {
+    landFlash = new Map();
+    Object.keys(LAND_DIFF_BADGE).forEach(k => d[k].forEach(i => { if (!landFlash.has(i)) landFlash.set(i, LAND_DIFF_BADGE[k]); }));
+    if (origin != null) landFlash.set(origin, landFlash.get(origin) || '✨');
+  }
+  function landFeedback(html, bad) {
+    const el = document.getElementById('land-feedback');
+    if (!el) return;
+    el.innerHTML = html;
+    el.classList.toggle('bad', !!bad);
+    el.classList.add('show');
+    clearTimeout(landFeedback._t);
+    landFeedback._t = setTimeout(() => el.classList.remove('show'), bad ? 3500 : 6000);
+  }
+  function landCoinFloat(amount) {
+    const lab = document.getElementById('land-coins-label');
+    if (!lab) return;
+    const r = lab.getBoundingClientRect();
+    const f = document.createElement('div');
+    f.className = 'land-coin-float';
+    f.textContent = `${amount < 0 ? '−' : '+'}🪙${Math.abs(amount)}`;
+    f.style.left = `${r.left}px`; f.style.top = `${r.top}px`;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1300);
+  }
+
   // ---- Plant picker (choose what to place in one empty layer slot) ----
   function openLandPlantPicker(index, layer) {
     const tile = landPlot.tiles[index];
+    if (landIsWater(tile)) { landFeedback('🌊 You cannot plant in open water.', true); return; }
     const options = Object.entries(LAND_PLANTS).filter(([, p]) => p.layer === layer);
     const rows = options.map(([key, plant]) => {
       // Preview the fit this plant would have if placed here TODAY (a fresh
@@ -3068,10 +3221,12 @@
       const previewEntry = { key, plantedOn: landDay };
       const previewTile = { ...tile, plants: { ...tile.plants, [layer]: previewEntry } };
       const fit = computePlantFit(previewTile, layer);
-      return `<button class="land-picker-option" onclick="placeLandPlant(${index}, '${layer}', '${key}')">
+      const cost = landPlantSeedCost(key);
+      const afford = landCoins >= cost;
+      return `<button class="land-picker-option" ${afford ? `onclick="placeLandPlant(${index}, '${layer}', '${key}')"` : 'disabled style="opacity:0.45;cursor:not-allowed;"'}>
         <span class="land-picker-icon">${plant.icon}</span>
         <span class="land-picker-name-wrap">
-          <span class="land-picker-name">${plant.name}</span>
+          <span class="land-picker-name">${plant.name} <span class="${afford ? 'text-stone-400' : 'text-red-300'} font-normal">(🪙${cost}${landSeedBank[key] ? ' saved seed' : ''}${afford ? '' : ' — need more coins'})</span></span>
           <span class="land-picker-tags">${landPlantMetaHtml(plant, fit)}</span>
         </span>
         <span class="land-picker-fit" title="${fit.label}">${fit.icon}</span>
@@ -3079,7 +3234,7 @@
     }).join('');
     const layerLabel = LAND_LAYER_INFO[layer].label.toLowerCase();
     const article = /^[aeiou]/.test(layerLabel) ? 'an' : 'a';
-    document.getElementById('land-plant-picker-title').innerText = `Choose ${article} ${layerLabel} plant`;
+    document.getElementById('land-plant-picker-title').innerText = `Choose ${article} ${layerLabel} plant · you have 🪙${landCoins}`;
     document.getElementById('land-plant-picker-list').innerHTML = rows || '<span class="text-stone-500 text-[10px]">Nothing in this layer yet.</span>';
     document.getElementById('land-plant-picker').classList.remove('hidden');
   }
@@ -3089,15 +3244,29 @@
   }
 
   function placeLandPlant(index, layer, key) {
+    const tile = landPlot.tiles[index];
+    const plant = LAND_PLANTS[key];
+    if (!plant || tile.plants[layer]) return;
+    if (landIsWater(tile)) { closeLandPlantPicker(); landFeedback('🌊 You cannot plant in open water.', true); return; }
+    const cost = landPlantSeedCost(key);
+    if (landCoins < cost) { landFeedback(`Not enough coins — ${plant.name} seed costs 🪙${cost}, you have 🪙${landCoins}.`, true); return; }
+    const before = landSnapshot();
+    landCoins -= cost;
     // Automatically plants from this plot's own seed bank when one exists for this
     // species — the honest default per the seed-sovereignty design (a player who's
     // harvested this species here before is continuing that lineage, not starting a
     // fresh market seedling) rather than a separate market-vs-bank picker choice.
     const entry = { key, plantedOn: landDay, generation: landSeedBank[key] || 0 };
-    landPlot.tiles[index].plants[layer] = entry;
+    tile.plants[layer] = entry;
     landPlantings[index] = { ...(landPlantings[index] || {}), [layer]: entry };
     closeLandPlantPicker();
     recomputeCanopyShade();
+    const fit = computePlantFit(tile, layer);
+    const d = landDiff(before, landSnapshot());
+    landFlashFromDiff(d, index);
+    const ph = landDiffPhrases(d);
+    landFeedback(`${plant.icon} <b>${plant.name}</b> planted for 🪙${cost}. ${fit.icon} ${fit.label} here.${ph.length ? ' Nearby: ' + ph.join(', ') + '.' : ''} 🪙${landCoins} left.`);
+    landCoinFloat(-cost);
     renderLandTileInfo(index);
     renderLandGrid();
     saveGame();
@@ -3116,30 +3285,63 @@
   }
 
   // ---- Element picker (choose what design-layer element to place on one tile) ----
+  // Computes what an element WOULD change by actually applying it, diffing, and
+  // putting everything back — so the preview is exactly what placement will do.
+  function simulateLandElement(index, key) {
+    const prev = landElements[index];
+    const before = landSnapshot();
+    landElements[index] = key;
+    applyLandElements(); recomputeWaterFlow(landPlot.tiles); recomputeCanopyShade();
+    const after = landSnapshot();
+    if (prev) landElements[index] = prev; else delete landElements[index];
+    applyLandElements(); recomputeWaterFlow(landPlot.tiles); recomputeCanopyShade();
+    return landDiff(before, after);
+  }
   function openLandElementPicker(index) {
     const tile = landPlot.tiles[index];
     const rows = Object.entries(LAND_ELEMENTS).map(([key, el]) => {
-      const ok = el.eligible(tile);
-      return `<button class="land-picker-option" ${ok ? `onclick="placeLandElement(${index}, '${key}')"` : 'disabled style="opacity:0.4;cursor:not-allowed;"'}>
+      const eligible = el.eligible(tile);
+      const afford = landCoins >= el.cost;
+      const ok = eligible && afford;
+      let note = el.short;
+      if (!eligible) note = `🚫 ${el.whyNot ? el.whyNot(tile) : 'Not eligible on this tile'}`;
+      else if (!afford) note = `Need 🪙${el.cost - landCoins} more`;
+      else {
+        const ph = landDiffPhrases(simulateLandElement(index, key));
+        note = `${el.short}${ph.length ? '<br><span style="color:#fcd34d">Would change: ' + ph.join(', ') + '</span>' : ''}`;
+      }
+      return `<button class="land-picker-option" ${ok ? `onclick="placeLandElement(${index}, '${key}')"` : 'disabled style="opacity:0.45;cursor:not-allowed;"'}>
         <span class="land-picker-icon">${el.icon}</span>
         <span class="land-picker-name-wrap">
-          <span class="land-picker-name">${el.name} <span class="text-stone-500 font-normal">(🪙${el.cost})</span></span>
-          <span class="land-picker-tags"><span class="land-plant-tag">${el.short}</span></span>
+          <span class="land-picker-name">${el.name} <span class="${afford ? 'text-stone-400' : 'text-red-300'} font-normal">(🪙${el.cost})</span></span>
+          <span class="land-picker-tags"><span class="land-plant-tag">${note}</span></span>
         </span>
-        <span class="land-picker-fit" title="${ok ? 'Can place here' : 'Not eligible on this tile'}">${ok ? '✅' : '🚫'}</span>
+        <span class="land-picker-fit" title="${ok ? 'Can place here' : 'Not available'}">${ok ? '✅' : '🚫'}</span>
       </button>`;
     }).join('');
-    document.getElementById('land-plant-picker-title').innerText = 'Choose a design element';
+    document.getElementById('land-plant-picker-title').innerText = `Choose a design element · you have 🪙${landCoins}`;
     document.getElementById('land-plant-picker-list').innerHTML = rows;
     document.getElementById('land-plant-picker').classList.remove('hidden');
   }
 
   function placeLandElement(index, key) {
+    const tile = landPlot.tiles[index];
+    const el = LAND_ELEMENTS[key];
+    if (!el || tile.element) return;
+    if (!el.eligible(tile)) { landFeedback(`${el.name} cannot go here${el.whyNot ? ': ' + el.whyNot(tile) : ''}.`, true); return; }
+    if (landCoins < el.cost) { landFeedback(`Not enough coins — ${el.name} costs 🪙${el.cost}, you have 🪙${landCoins}.`, true); return; }
+    const before = landSnapshot();
+    landCoins -= el.cost;
     landElements[index] = key;
     applyLandElements();
     recomputeWaterFlow(landPlot.tiles);
     recomputeCanopyShade();
     closeLandPlantPicker();
+    const d = landDiff(before, landSnapshot());
+    landFlashFromDiff(d, index);
+    const ph = landDiffPhrases(d);
+    landFeedback(`${el.icon} <b>${el.name}</b> built for 🪙${el.cost}. ${ph.length ? ph.join(', ') + '.' : 'No change to the neighbouring ground; it helps plants on this tile.'} 🪙${landCoins} left.`);
+    landCoinFloat(-el.cost);
     renderLandTileInfo(index);
     renderLandGrid();
     saveGame();
