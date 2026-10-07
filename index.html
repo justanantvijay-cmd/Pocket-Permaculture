@@ -660,7 +660,7 @@
          the game behaves exactly as before (local save only). See account* functions. -->
     <div id="account-panel" class="w-full px-6 text-[10px]"></div>
 
-    <button onclick="showLandScreen()" class="mt-2 bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-3 px-8 rounded-xl shadow-lg">Start Restoring →</button>
+    <button id="title-start-btn" onclick="showLandScreen()" class="mt-2 bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-3 px-8 rounded-xl shadow-lg">Start Restoring →</button>
   </div>
 
   <!-- ============ THE LAND (early preview — terrain model only, no plants/elements yet) ============ -->
@@ -4260,16 +4260,16 @@
   const restoredSave = loadGame();
   renderCityCards();
 
-  if (restoredSave && currentScreen !== 'land') {
-    // The balcony game was cut (Oct 2026) — a stale save pointing at it lands on the title.
+  if (restoredSave) {
+    // Always open on the landing page (with the optional account/login panel), even for a
+    // returning player — the button below becomes "Continue". The balcony game was cut
+    // (Oct 2026), so a stale balcony save simply lands here too.
     currentScreen = 'title';
     document.getElementById('screen-title').classList.remove('hidden');
-  } else if (restoredSave && currentScreen === 'land') {
-    document.getElementById('screen-title').classList.add('hidden');
-    document.getElementById('screen-land').classList.remove('hidden');
     if (!landSeed) landSeed = Math.floor(Math.random() * 2147483647);
     regenerateLandPlot(landSeed);
-    renderLandGrid();
+    const startBtn = document.getElementById('title-start-btn');
+    if (startBtn && Object.keys(landPlantings).length) startBtn.textContent = 'Continue restoring →';
   } else {
     unlockedPlants = getUnlockedPlantsForSeason(seasonNumber);
     rollBlockedTiles();
