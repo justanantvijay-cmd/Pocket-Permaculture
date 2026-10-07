@@ -28,6 +28,8 @@
      of a flat fill. Only grass + water made it in this pass; dirt/crop-stage/
      wildlife/background art are still open (see the asset-pack shortlist doc). */
 :root {
+    --land-plant-atlas: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAADgCAYAAAD8KGPgAAAM+UlEQVR42u2de2wUxx3Hv2vOyPjOBzZ2jI3FQwUqQ4QaERtHqZJaSESiPBIpqgjBMgpqkKI2In+kimnaqEqFKUUBlYqIVFRYQOq0SC0lqhRFyIE24iUq1QWMMA6BHhwOxxmf72zH2Gz/OGY9u5692/d5j99HstjdW3Zmf6+Z2Z3frATCFM3bWuRs57Rtb5WMXi9AIjUn+IbGClRWBYXn9EZTj7ZaZKNKkPLJCs1Ynl3Bl4fGi4olZWU/lpTRG03hTMddQ3UK5IsVpq0v/btTimje1iJnsng9KquCaGiEIW+Q/CR8Xhi8xWkVcabjrm0l8OXpWbuofFFYylSfgnyIz+UhSSUUp5StV5ZI+KwOono0NFbohs2A36w/k/WVhyRAcX/jDaFeGNGWo+d1mZTUm6WcvPCAbAJxyvpjSVm3LPab9vfKquCjNkHsBb5phJlFCq3eYSV4aRC+UUBvNCXsjbgleNan58sUHROPA8bP4Y/lbQjyA3o9IV+NA3gv0Foj+y2bxVn1BCOWLvKWvBkJ842jkRu1MxbQNsRWBGu0Tr58FqQVgtF466QXOEXAr9bPC0UrILvWP71miuP30NUd93cvqKs7jtqFZYascXrNFDRvszcQYwKrXVim2tYKkx0zImzqBU1CfNUG6FmiyDLdCB3a8vTO439nx/sjY/7vhvKCFt2kE4po294q8e2AqJxs1zdTvi89QE/obnuAG/hqHGC0d6Ln7rnqDWWqDzXCGUJRf2QM/ZExy0Jnf3nxRoxZpVHh5aJcK3Xw5Uv5Pa81ydWVo6pjt3sD2PrHQ1IuyrZTB9+GoOr5M1X/ekloxjRDx1zpBfHuyNxMdMxrJdzu7c+5EjwbiG1+ff6jrbTg2f6Bj64/No10uLQYib5BhEuL+abX9HUsh6BL3Uk0NFagobECl7qTnsb/pxumTzj+dMN07HmtSfaibCZ0tfCt1cHWE0N+EORE39sM//roJ6ob/f7rv5dyUa4Wr+oBAHhz37vym/vezdnb8GzC8KL8XNeBIPyNRCJwflRM+QEuCp7yAyaJ4B/L/IBcCJ/yAyaB8Ck/IEfCF/FY5gfkAiv5Afdar6XPa1mAe63XkEyOAJvmUCPsRdyX9vbgmbX16L8Vx+UL1xAOFwEALlxKYMHOWt1QRCHIIZLJEfTfiiPSHVGEbwRSQIbGU9rbA2lvj2LhqdYu3Zl5wZZanDt5GQCQSAwr1l/y1pyMs/lIATrMOnoHz6ytx+JlCyDt7UE4XITq6jAGdt/U94JNc3DhUgLd/xtRQg8jL/IDJktIyZQfUPlI6L3RlKF5rNQIZ2iIQwdvoro6jERiGOFwkRJSrJI3+QGeecGmObighJwRW8KnRxEmrJ+fEeeU0H2fH8ALSHTc6dehXuUHBPwmeO3zGfb00emFOsz0lgDgzsuzMOvonfTo99lQfikg2+i0siqIdRuCiiKcVEKmGdmsq9p/Kw4cTY9+w+Ei1Hw63lhnyw8o8JPw+Ydd/PMZdizTkgBGYZNy+RDD/nhFdHXHM3ZVjU6X94UHmH0u40ZbIOL8syHg5OUJXdXIauMhaNKPAz78/APZrAKcWDPITH5AzafjE9NEwvd9fkCmlFTtqNOpnF4z+QGR1SHljxd6XuQHfPj5B3Km0CRavsCJFbOMdH2zKTAvQlC2JG0zw34neOzyA/g4bPQBl9uJdY9dfgBLS+X/1Y5C3Ra6UwJ3pBuai/wAPkfXrRxhMziVH2B5HMDyA9j2koUhV260PzIG7VR4kZD5Y25NldfmJgjzA9Akm2kHfJEfYHYK/O/e+LVrnQun8wMkJwTj5g2bUYRX9dAqw9OkDIIgCIIgCIIgCIIgCIIgCIIgCMIc9DFPG2WLZoWYrYsvV87VyxEwukKJHaHzSxiw8tgx7cQAIwrx7cc8AfHSAU59zFNbLiPb7Dy9aTFMIb5M0hOtXMI+G6jNGah06FuSRhZoMsP0minCib6++5ShiBs/v6xsR/vsJ9YZ9TZWL5E3iCaKib5tE/CL9TO0AmD79c8vRqQ7gmhfwpYX6H232ChmZ+j56luSoYM3VZbOlgKI9gGR7ojqXKe9TWT5TijCd2tF1D+/GNXVYZWgS95Kr9HAZ7I71RBn+oStE8qe9B6QFmI6LGgtXasEnnTYstcQZ1qgSbtehFYRRkOQL7IkWY6AyNL1sDNL2ohV64UgfvKwKInbtgfk6vsBbFp6ZHVIyRGo+zKpahPMZCdm87h1G4KefCTaV98PmJAj8GVS1ftxMkdA7wPS2TwmUx1E44BJ//0APnGaT5ju6o5PaBN497czXb5te6t0puMujn38ddaszEwhSPRo4qk7EfuPInLx/QC9qeksR1cbfpyaqs6PiPVgz4S0ecW8xbvyLMjr/IBMinBa8JnaPnG7MfEcrxcOIQiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAhickAThyxw4u1fqiZgJRLDeGn/TokU4JHw6ze/AABI9USV46f/fs6SEuhLehZI9URx6YtOZX/JD5ZavpZv8gO0dHzystx/rw8A8OIbJ1wvc8v7G2UASESGdYXOztn/i8OSqx6Qq/wAXvh1P1yNwXtXAAB/2wfZCyW88lI5gBGc3nsOi5ctUI5fvnANpT8dwSsox5/+GvMmBHn1/QCRhV3+Tx+WNFxRjt+KFFmyPitc6LkHrAK+QhR37z9AxYxCYBWAHmDZd2a6H4JYCo82P8Ctj+ZoWbRUwjDK8Jf9/1WODS8vwyIAVzvdSylKKzat5EVL07fZdzOAihnp3692yrjaGTNtAL7LD2CWzoSi3feiDj/68SYZAP78h4MSv03dE4IgCIIgCIIgCIIgCIIgCIIgCIIgJhn0HtME77St133rv6O5/fGZmqgVhNWbN1umtpzDpzYr9bh4PWWpHpIfhc9ulAng4vUUnpyfXmR143MHJK+Ev3ROOeLJbwEAkfiAJSUE/Ch8JnheADVlJSqrdEMRWjpvxmxfowA+hQk/Eh9A8MhMROIDKkW4weFTm2Vewbd3lKDq+GxUHZ8NAHhyflB1Tl4roPNmTBF+OFykKIEpwg3h88rduWqrvO7Fxcq+vL9EMYyashIYVYKvQtCO5nbpnbb1Mh9eDr26VQaAZHIETS6HnUh8IGNok/eXoHNLzJQX+kYBvEWxXtCO5nap6cge6dCrW+WmI3tcFb6ogWULh9++nfB2HPDFxa0yswZ+203h8zF/43MHpC3vb5RL54x60gVlZWkp+2QWqkrH9//9FbDsNwOmemOSXWtkuK0AUTleKeHwqc3yP09+K/yt+B/lyvbu03u8HQeI+sde4lVOgLZre+2znTIA/PbceJrS2/XjGTMLXviZ4fpY6gVd+2ynzCrBb3sJXyarg5v1YD0bI2WYqYfkhADMaNxp4Ytwuj6sCxqJD6Bh6LuG/o/ROvj6YZxWEW4aAh+GMhmA18ZIEARBEARBEARBEARBEARBEARBEJMben3mEEvXLVdeU3YeO+vuuqEkYLWAl65bLpfOTYuy78aoqesWkGiNUzo3gGnlAZUyGMMptUJE55ACbMKse1p5ALUr6uTaFXWy9vfSuQEwb8jbEMRuvOvEeYlZmpm4ayX8lM4NKFb+YLAA054oQmHxQ9SuqJMDxVPxYDCtmOEUUBTM4xBUu6JODs+bivC8qahdUSczizPq8laZUTwVRUFgKDaKwuKHKkUwHgwWYCg2ir4bo4YNosCPls9uVhR73Sr7etegEmIAoLD4IUYHRwAAQ98Mo7D4IQqLH5oKP7YVIIqDXlh+4usR6MVeN5TQeeysxCya94QHyYfKOUOxURQF0797ogBtKPDKC5jbD30zjPC8qUqjyHuCmzBP0IaYzmNnpb4bo7jeNWjqegG7wmDx0G26TpyXRIpm3lAYKsBQzN3GmL92e8sa+Vfn7oDfX9963HTZpj2gvWWN3N6yRh4bTnfJ+q4MYtfK2WhvWSN7oYT36mfhvfpZYOUDwK6Vs7Ft8ROuCl8rg5IZUwBAaQdKZkyxJANLIYgVnitY+UOxUfgdSyFo4P4Ydq+dm9753kwM3B/ztNKq8h/te83A/THsWjnbdh0kqy6oPWYl/tkJAbksf7LUgSAIgiAIgiAIgiAIgiAIgiAIgiAIgpjcGHqJ3LytJet8l7btrZLeeW3bW+lltRUFMIE2NFZkvdCZjruYXiOeL9QfGSNFmFVA87YWed2GeQCA8tD4abGk2sh7oxMnZXZ1xwEAtQvLlG2mCFKCmoCe8JnV88LXwoRfWRVUKaJ2YZlKEYQ+ulMTK6vUaR6xpIxYUlYpRHuOCKYMwoQHaAWfDW0YIst3wANY+NH+8QrpjaaEXsBbPSnDogJ6oykl7BgJU0bCEWFQAW3bW6UzHXcNXSBTL4iw0Qaku4sTxwHaHg9TVEOjvuDZOOCpOxG0kcydHQmzfr2RcwiCINT8H7oFUisxvNvFAAAAAElFTkSuQmCC");
+    --land-ground-atlas: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAAQCAYAAAD506FJAAACW0lEQVR42u1bS2rDMBBVgo0DcTBkkUVo9iEH6CKn6t16ga56glJ6gNJFFwETB2q8aFdObTlWpdFoJLnzwCgyGVkJeW9+yuzp5eFbMKLFvrnnL8ECj+nO2GaTN735Z5VarWFjb/vshH8CDIYZIKTDXsPGvmsbjAC8n87ibr26jgyGb2B5aRvCut5DAiUqNrkpyL/fHsXbx/N1xMY6zwb3TlVttMZhtRBCCPF6/poEidJl0Zs3l5J8D3X1+8wsL6Lw0lR7mLsmvwm5XXt+avKr7qvIL7/2gboqe8TBIP/YPSry35r/d8ypHhRKWK9L/v322Bsp0PX6cgRwWC3IRKFLEhvC3PL21BGA7PHl+SZvrhckvJYv2zVs7CG2M7kLwDn4MGWgTAH+igxkcXDVBWiJbxIyt97dR5gPBaQLMCUkPnLxWGCaKmCQfSwyoK4NmBBfDu3TZYEmAlBRgQgYC4CD/J8xjAwgQhFCUVBFquZSokcAUFGRUxhbEcDu+0PWsLFX2SY6+XoI5I+xTagqDLqKFqjqAmMigAmoqGR5gRoBTKnvL2OOTdLuiAld8vso3rkAZdHPNCWAkipdFsZdgOZSgoQlywvQPqEFNSx76j3MsI8Ch+ChXbX6dL1917tDCoOqot/gsyIWAV3mzTrnAbrvoSokchHQgaf2DZ/kl0N8aL5PXfTDzptNw3lZIDALidjAPJ2HsYaNfXD/BeAjwYKU+K7y5jER0BEIyggAQjJoAa61s7XXXUMlEu08OAGIkfynqh5NAWKC75ZZaB5/ysU/ZynAVNIIiAgwGLHhBx9IpwAeJBeuAAAAAElFTkSuQmCC");
     --land-tex-grass: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDIxIDc5LjE1NDkxMSwgMjAxMy8xMC8yOS0xMTo0NzoxNiAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo4QUE2OUU0NkQ1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo4QUE2OUU0N0Q1NEQxMUUzQUQ5RjhGRDAyNzZFMzU5QyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjhBQTY5RTQ0RDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjhBQTY5RTQ1RDU0RDExRTNBRDlGOEZEMDI3NkUzNTlDIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+rfd5NQAAA8NJREFUeNrsWstu2zAQtGjq4aROm6Ao+jr3D/qZ/ateeugP9JBrD0URoA/UseO4Y0+yZiiRZijKkgMvAkOhKXmHuzu7XCr79Pnj6JBFjQ5cjgCeAIDlcnnYAObz+WKxMEesfy3xf9sDgCzLoJPY4WYjfov5J/QAAAI73G4EYJTyPXY8HmMOZg4LADFAcOEHgG9ptNVqJYPReNKwUFaTnZPpbOJ1Fp5w0Um0r68xVhQKcbEbLYALTEA8cCZG+Elr+G3YOQAJaLi7y4u43vQceQIhEXnnAGTlXD5TV0LUbZyPp3FCuPatAIgSLo+vj2OEsF13cVAczB9LDwAghvI8b+k5gbEeaN7AmdpMqEVR7AFDHNvsAAC3AwAEkCvsUkm4EUw+8GilrORiJpTVRnqvN2ezmVkv4tqsppSViZBThOBYHfQOgDmeWuHz+vrapClVzy/AwHrLtLWwRy8A8Am9oQM+LQ+0AUgu5DWVXm6kL+1FK9iBI2ZIaKYPTz5ixfLY4EtuAScLSdYIocXA5JJ4z9WU0akwTKHNymRnconj/giRBW20PDWhI+lHJZe9LT9+SKLOVXRwXLvMNAT2DPlWj4YqTxzAsbF1BDAsAGmbbT0AsLqLrBkPCYC1l7Aq3sMAAGHFK7X7fkSnAiC+VK94Ixo24cVvD63FkPKTC7E/CzR6PHtsWsf8BG7EPiTk3lYAZHvgqnijQxk3AoDaSIcAhHZcPtMGAFYHzFYUhexyYdJ690239BwP4bSJBDyZ+wFi8Bzq6CTkkxyAyQTCbOK0bMrTGro9/yTfTHqojKdYpnMObj/AIwLX0tRpQ9e5r+v2aLjz+Kcx3zUAQNxUVWWOjLzt1eQAQrokMkE3IpPjAnbzJpPJAI3gjAG2eFnP8Ni0r55cDADzDJTOM8COy24LxFlzWBaw0i2DpqU1umit6kYSqFNTKiKKOE0MAiBNdtciJfEl7jyxQAlJWVn6ZW5J8ntktoR7Tl1dlWvOqW4W1WoPNQ8AQHtgKMvSrB3i9j1rAO++vuLVrzd/f364us273Y+LMRkM8FseK0YD2Mbr2ffT919eq0W2BwAMNnm3y3rZI76tks/023uDdNXGuT9KFMKQ67hX0dRJmeNPlr38U5xfnnWhOo86zQNFU9gBiGALdVrl+DufVnLfxeXz4nfexdpb+xWXPOoNgTsXGis1Pdm+6fHy24vuvD+h9g8ycZnrQi/nN+sYmlxVMMJ8ukiOIfnMB0H8bLL1nIsOIiELlkgWgiOV+V2SP/1xov/1ubcMlP8CDABA4WWZS6l4nwAAAABJRU5ErkJggg==");
     --land-sprite-canopy: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAeCAYAAADOziUSAAABnElEQVR4nLWVwUpCQRSG/6nZpKIZyUWJgqCF+xZ3qW/QOoigJ2jRRh9ANy16gkCC1r2BLl20dyEEhigXxbihrZLb4jbdc8czo5n9IHr+OfPd/wwXR0DTZbUS6J6uRq0uOF/qELecg5NPshBvOPv+VQk4oDBB9lNR73ga/NTjaQBvOEO7OVpIKW1JTHLySbhlVUUppZNPGlOomn5TYDhRBJTQxIFsfgjMAagEki7Sc7GJgj3ix5LZIKaUdNyFMVeR6aExmHqPlr9nUQ/1ttZJxqndHEFS8rIENDG3T9INXBOtOYCSW86FMFvTb7SxM+t0J2GyTncCACie7IHW1NM3/msyAJD0KXpCUxq6rny/P4fkFkxjcGBjsr9qI2fm9+do1OpC+v05MgfbawGU1D+tAFa7kXSxF4pu3F1dBAXnkwUMPInr+wf2mgMMZ5ba3VnJs8LOSrVDupl+uB5d0tSQzibw/vaBdDZBXD8GfGpVX+keQUGl407v1M1YR3lu+2i9FI9UTYGxMWmTSbYeQWPrujkf9ADg9rHAAvQxvwCnBMiLDVqOuQAAAABJRU5ErkJggg==");
     --land-sprite-shrub: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAACKElEQVR4nO2UsW8SURzHP9eesbFwNZeSpoTAIgPdJejSsJqmo4tDR9d2aQLumnTRP0Hj5mIn13ax6cJIGc6FyzUXQnPACUZFcw70Pd89DmgnF78LP977fb6/3/v9CAaaPj4/jB7tlhlcBlw0vmBZKwA0miGHn94Yev4ifklPGA5/MrgM8BxPmt9GOp/Y0ftn+1E2axGG37GslRt3n8TPhI6e7Ecivo15Ev9f/1ZyeXv1GgDW/TuE/XHigt69fHWjZe/Va5I3hLmduUvQ/REBVKoZNjZXWU9N/K6GER1/xPlJN7HQPN5QL8WFkFpASBQSRRbxS0Dscj1lTBmrZxubq1SqmdgY5vHm9cxjlXW1X1zI2O9B+iAvvy/izbA/jirVjDxQx6F+L29v4Tkefi+8fgVALQr7Y+bxpgg6/ojUWzfW6YOjkow9x0PN1dXxR/IVajz1b1re3iKbtWJG6YM8jWZIoxnK8aiLVosIRsSmZZvG+Uk3qlQzU53qRVRNxlKLVB6IvQLADINf0Vpu+W+nr91EQ10tJwBA5VVjIVMFSkUbbydFqWjTcgIefh7KRL8H3k5qbkHBiU/QdiAORRLEd1Iq2vJ83qsEXyramIOzdIHHX9truWUJt5yAlhOQ03YiDAAG3m8GZ+kCwCxevkAkqhcwGYn49ejjEczxad2dxcNkBy6Qdz/cKwDkn35rqwm6scg7Pq27Sec6L5bsAnk1cZZ0Y4VHbVToD8YpbKNxjRjhAAAAAElFTkSuQmCC");
@@ -144,15 +146,41 @@
     position: relative; aspect-ratio: 1;
     display: flex; align-items: center; justify-content: center;
     font-size: 13px; cursor: pointer;
-    /* Real ground texture under the color-coded tint (Sept 13 2026) — grass by
-       default; JS swaps to --land-tex-water on a placed pond tile. multiply keeps
-       the near-opaque tint (landTileColor) legible for the actual game info it
-       encodes, while still letting the texture's light/dark pattern show through
-       per-pixel instead of a flat color hiding it completely. */
-    background-image: var(--land-tex-grass);
-    background-size: cover;
-    background-blend-mode: multiply;
+    /* Phase A world tiles (Oct 2026): one hand-drawn ground atlas (Sprout Lands grass,
+       sand and animated water frames, 16px tiles, free/non-commercial pack) is the
+       permanent base layer. JS picks a deterministic variant per tile via
+       background-position; the data lens (elevation/daylight/wind/water) is a separate
+       .land-tint overlay child on top instead of being the terrain itself. */
+    background-image: var(--land-ground-atlas);
+    background-size: 1600% 100%;
+    background-position: 0 0;
+    image-rendering: pixelated;
+    box-shadow: inset 0 0 0 1px rgba(40,70,20,0.22);
   }
+  .land-tutorial {
+    position: sticky; top: 4px; z-index: 40;
+    background: #1a2f14; border: 2px solid #fbbf24; border-radius: 12px;
+    padding: 8px 10px; box-shadow: 0 6px 16px rgba(0,0,0,0.55);
+  }
+  .land-tutorial-step { font-size: 9px; color: #fbbf24; font-weight: 700; letter-spacing: .04em; }
+  .land-tutorial-title { font-size: 13px; font-weight: 700; color: #fde68a; margin: 1px 0 2px; }
+  .land-tutorial-body { font-size: 11px; color: #e7e5e4; line-height: 1.4; }
+  .land-tutorial-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  .land-tutorial-btn { background: #d97706; color: #1c1917; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 8px; }
+  .land-tutorial-skip { font-size: 10px; color: #a8a29e; text-decoration: underline; }
+  .land-tutorial-bar { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .land-tutorial-bar > div { height: 100%; background: #fbbf24; transition: width .4s; }
+  .land-tile-water { animation: land-water-flow 1.6s steps(1, end) infinite; }
+  @keyframes land-water-flow {
+    0%   { background-position: 80% 0; }
+    25%  { background-position: 86.6667% 0; }
+    50%  { background-position: 93.3333% 0; }
+    75%  { background-position: 100% 0; }
+    100% { background-position: 80% 0; }
+  }
+  .land-tint { position: absolute; inset: 0; pointer-events: none; }
+  .land-scroll { padding-top: 12px; overflow: auto; max-width: 100%; border-radius: 6px; -webkit-overflow-scrolling: touch; }
+  .land-scroll .land-grid-parcel { width: max-content; }
   .cliff-edge { position: absolute; pointer-events: none; }
   .cliff-top    { top: 0; left: 0; right: 0; height: var(--w); background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
   .cliff-bottom { bottom: 0; left: 0; right: 0; height: var(--w); background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0)); }
@@ -217,10 +245,14 @@
      it replaces did. Same position/size/opacity math as .land-growth-icon, just
      background-image + explicit width/height instead of a text glyph. */
   .land-growth-sprite {
-    position: absolute; transform: translate(-50%, -50%);
+    /* Phase B (Oct 2026): bottom-anchored, 3 real growth frames per layer from one
+       packed atlas (3 stage columns x 7 rows: 6 layers + hedge). A mature tree stands
+       in its tile and rises above it, Stardew-style, instead of floating mid-tile. */
+    position: absolute; bottom: 2%; transform: translateX(-50%);
+    width: calc(var(--land-tile-px, 50px) * 0.95); height: calc(var(--land-tile-px, 50px) * 0.95);
     pointer-events: none; z-index: 1; image-rendering: pixelated;
-    background-size: contain; background-repeat: no-repeat; background-position: center;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55));
+    background-image: var(--land-plant-atlas); background-size: 300% 700%; background-repeat: no-repeat;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,0.25));
   }
   .land-growth-sprite-dominant { z-index: 2; }
   /* A placed design element (swale/pond/hedge/etc., LAND_ELEMENTS) previously only
@@ -238,8 +270,10 @@
   /* Sprite variant of the above (hedge only, Sept 13 2026) — background-image +
      explicit box instead of a text glyph, same corner position. */
   .land-element-sprite {
-    width: 16px; height: 11px; image-rendering: pixelated;
-    background-size: contain; background-repeat: no-repeat; background-position: center;
+    width: calc(var(--land-tile-px, 50px) * 0.95); height: calc(var(--land-tile-px, 50px) * 0.95);
+    bottom: 2%; left: 50%; transform: translateX(-50%);
+    image-rendering: pixelated; background-image: var(--land-plant-atlas);
+    background-size: 300% 700%; background-repeat: no-repeat; background-position: 0% 100%;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
   }
   /* Sighting journal (Aug 2026) — a field-notebook card per creature's first
@@ -254,7 +288,35 @@
     background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.35);
     padding: 9px 10px;
   }
-  .land-sighting-icon { font-size: 16px; line-height: 1.3; }
+  .land-sighting-icon { font-size: 16px; line-height: 1.3; display: flex; align-items: center; }
+  .land-creature-art { image-rendering: pixelated; display: inline-block; flex: none; }
+  .land-creature-emoji { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .land-creature-sil { filter: brightness(0) opacity(.55); }
+  /* Field Notebook species grid — silhouette until first sighting (Oct 2026). */
+  .land-codex { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 8px; }
+  .land-codex-slot { background: #1c2a1c; border: 1px solid #3f5a3f; border-radius: 8px; padding: 4px 2px 3px; text-align: center; min-width: 0; cursor: default; }
+  .land-codex-slot.seen { cursor: pointer; border-color: #b8860b; background: #26361f; }
+  .land-codex-slot.seen:hover { border-color: #fbbf24; }
+  .land-codex-slot .land-creature-art { margin: 0 auto; }
+  .land-codex-name { font-size: 8px; color: #a8a29e; margin-top: 1px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .land-codex-slot.seen .land-codex-name { color: #fbbf24; }
+  .land-codex-credits { font-size: 9px; color: #78716c; margin-top: 6px; }
+  .land-codex-credits summary { cursor: pointer; }
+  .land-codex-credits li { margin: 2px 0 0 12px; list-style: disc; line-height: 1.3; }
+  /* Reveal card — shown on a creature's first sighting (and when a seen slot is tapped). */
+  .land-reveal { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(340px, calc(100vw - 24px)); z-index: 60;
+    background: #1f2d1b; border: 2px solid #fbbf24; border-radius: 12px; padding: 10px 12px; display: flex; gap: 10px; align-items: center;
+    box-shadow: 0 8px 28px rgba(0,0,0,.55); animation: land-reveal-in .35s ease-out; }
+  .land-reveal.hidden { display: none; }
+  .land-reveal-art { background: radial-gradient(circle at 50% 60%, #3d5a2e, #243319); border-radius: 10px; padding: 4px; flex: none; }
+  .land-reveal-art .land-creature-art { display: block; }
+  .land-reveal-body { flex: 1; min-width: 0; }
+  .land-reveal-kicker { font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: #fbbf24; }
+  .land-reveal-name { font-size: 13px; font-weight: 700; color: #fef3c7; margin: 1px 0 2px; }
+  .land-reveal-flavor { font-size: 10px; color: #d6d3d1; line-height: 1.35; }
+  .land-reveal-credit { font-size: 8px; color: #78716c; margin-top: 3px; }
+  .land-reveal-close { background: transparent; border: 0; color: #a8a29e; font-size: 14px; cursor: pointer; align-self: flex-start; }
+  @keyframes land-reveal-in { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
   .land-sighting-rare .land-sighting-icon { font-size: 22px; }
   .land-sighting-body { flex: 1; min-width: 0; }
   .land-sighting-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
@@ -599,16 +661,20 @@
     <div id="account-panel" class="w-full px-6 text-[10px]"></div>
 
     <button onclick="showLandScreen()" class="mt-2 bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-3 px-8 rounded-xl shadow-lg">Start Restoring →</button>
-    <button onclick="showCitySelect()" class="text-stone-500 hover:text-stone-300 text-[10px] underline">🌱 New to companion planting? Try the 5-minute tutorial</button>
   </div>
 
   <!-- ============ THE LAND (early preview — terrain model only, no plants/elements yet) ============ -->
   <div id="screen-land" class="hidden w-full max-w-md flex flex-col gap-3 py-4">
+    <!-- Guided tutorial coach card (Oct 2026) — replaces the cut balcony tutorial.
+         Event-driven: each step completes when the player actually does the thing
+         (see LAND_TUTORIAL_STEPS / updateLandTutorial). Always skippable/replayable. -->
+    <div id="land-tutorial" class="land-tutorial hidden"></div>
     <header class="flex flex-col items-center gap-1 mt-2 mb-1 text-center">
       <div class="text-4xl">🌍</div>
       <h1 class="font-display text-2xl font-bold text-gold-400 tracking-wide">The Land</h1>
-      <p class="text-stone-500 text-[10px] px-4 leading-relaxed">Early build-in-progress preview. Tap a tile to observe its terrain, then plant a food-forest stack in it — canopy down to root, each layer checked against the real ground and its neighbors.</p>
+      <p class="text-stone-500 text-[10px] px-4 leading-relaxed">Tap a tile to observe its terrain, then plant a food-forest stack in it — canopy down to root, each layer checked against the real ground and its neighbors.</p>
     </header>
+    <div class="text-center -mt-2"><a href="#" onclick="startLandTutorial(); return false;" class="text-[10px] text-stone-500 underline">Replay the tutorial</a></div>
 
     <div class="bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700">
       <div class="flex justify-between items-center mb-2 text-[10px]">
@@ -634,8 +700,9 @@
            "the year closes" stay stubbed for a future session (see renderVillagePanel). -->
       <div id="land-village-panel" class="bg-moss-950/70 border border-gold-600/30 rounded-lg px-2.5 py-2 mb-2 text-[10px] leading-relaxed"></div>
 
-      <div class="flex gap-1 mb-2">
-        <button id="landview-elevation" onclick="setLandViewMode('elevation')" class="px-2 py-1 rounded font-bold bg-gold-600 text-moss-950 text-[10px]">⛰️ Elevation</button>
+      <div class="flex gap-1 mb-2 flex-wrap">
+        <button id="landview-world" onclick="setLandViewMode('world')" class="px-2 py-1 rounded font-bold bg-gold-600 text-moss-950 text-[10px]">🌿 World</button>
+        <button id="landview-elevation" onclick="setLandViewMode('elevation')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">⛰️ Elevation</button>
         <button id="landview-daylight" onclick="setLandViewMode('daylight')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">☀️ Daylight</button>
         <button id="landview-wind" onclick="setLandViewMode('wind')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">🌬️ Wind</button>
         <button id="landview-water" onclick="setLandViewMode('water')" class="px-2 py-1 rounded font-bold bg-moss-800 text-stone-400 border border-moss-700 text-[10px]">💧 Water</button>
@@ -652,12 +719,13 @@
         <span style="position:absolute; left:0; top:50%; transform:translateY(-50%);" class="text-[8px] text-stone-500 font-bold">W</span>
         <span style="position:absolute; right:0; top:50%; transform:translateY(-50%);" class="text-[8px] text-stone-500 font-bold">E</span>
         <div class="land-frame">
-          <div id="land-grid" class="land-grid-parcel"></div>
+          <div class="land-scroll" id="land-scroll"><div id="land-grid" class="land-grid-parcel"></div></div>
         </div>
         <!-- Wildlife sighting toast (Sept 2026) — the map-level payoff for a first
              sighting, so it's felt in the moment rather than only ever discovered
              later in the Field Notebook. See queueSightingToast()/showSightingToast(). -->
         <div id="land-sighting-toast" class="land-sighting-toast hidden"></div>
+        <div id="land-reveal" class="land-reveal hidden" role="dialog" aria-live="polite"></div>
 
         <!-- Tile action popup (Sept 13 2026) — Farmville-style: tap a tile with
              something harvestable/giveable/pest-ridden and a bubble pops up right
@@ -688,7 +756,9 @@
          LAND_CREATURES / checkLandSightings() / renderLandSightingsJournal(). -->
     <div class="bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700 mb-2">
       <div class="text-gold-300 font-medium text-[10px] mb-2">📖 Field Notebook</div>
+      <div id="land-codex" class="land-codex"></div>
       <div id="land-sightings" class="flex flex-col gap-1.5"></div>
+      <details class="land-codex-credits" id="land-codex-credits"><summary>Art credits</summary><div id="land-codex-credits-body"></div></details>
     </div>
 
     <!-- The land screen's own simple time control — separate from the balcony
@@ -957,7 +1027,7 @@
 
   let landSeed = null;
   let landPlot = null;
-  let landViewMode = 'elevation';
+  let landViewMode = 'world';
   let selectedLandTile = null;
 
   // Small seeded PRNG (mulberry32) so a plot's terrain is fully reproducible from its
@@ -1598,6 +1668,43 @@
   // planted tiles (~0.03); Tier 2 needs real, developed coverage (~0.15, roughly
   // 16-20 tiles well planted); Tier 3 needs substantial investment (~0.25) on top of
   // its own already-demanding structural condition (a full mature 4-layer stack).
+  // ---- Wildlife sprites (Oct 2026, Phase C) ----
+  // 32x32 pixel-art sprites, hand-drawn as shape grids (original art — no AI image
+  // generation, no traced or converted photos; the Wikimedia Commons photos in
+  // LAND_SPRITE_CREDITS were only a reference for colours and field marks). Each sprite is { p: palette hex list (last = outline),
+  // r: 32 row strings, '.' = transparent, else a base-36 palette index }. Credits for the
+  // CC BY source photos live in LAND_SPRITE_CREDITS and are shown in the Field Notebook.
+  // Creatures without an entry here (ladybird, mantis, dragonfly, frog, mongoose) fall back
+  // to their emoji until art is sourced.
+  const LAND_SPRITES = {"honeybee":{"p":["f2b632","4a3320","e8f6fa","9cc8d8","c98a22","4a3320","ffffff","1a1420","2b2233"],"r":["................................","................................",".............88.................","..........888228................",".........82222228...............","........822232228888888.........","........8223322222222228........",".......82223222223222228........",".......82223222232222238........",".......82232222332223328........",".......82232222322233228....8...","......82233222322233228....818..","......8223222222232288....818.8.",".......8888888822444448.88818818","......8810011001444444485518818.",".....8011001100444444455555518..","....8001100110044444445555658...","...80001100110044444445555758...","...80001100110044444445555558...","..810001100110014444445555558...",".811100110011001144444885588....","..88800110011001100888..88......",".....801100110011018818.........","......88100110018818818.........","........88888818.818818.........",".............818818818..........","............818.818818..........","............818.818818..........",".............8...8..8...........","................................","................................","................................"]},"gardenLizard":{"p":["a98b5a","6e5634","d8c79a","e0502c","8a2418","fff3b0","1a1420","e8a030","2b2233"],"r":["................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................","................................",".........................88888..","............8888888888888333338.","...........811111111111133356338","............80010010010333333336","...........800110110110337777778","..........8000100100100033334448","88......88000010110110003444888.","008...8800000000122122220888....","08.8880011100000222222228.......","0880011110000000122218008.......","0011110008000088188818808888....","01008888800008.818.818.800008...","8888.....8888...8...8...8888....","................................","................................"]},"squirrel":{"p":["8a7556","e6dcbc","3d3224","efe6d0","d99aa0","1a1420","b8a57e","2b2233"],"r":["................................","................................","......7.........................","....77077.......................","...7000007......................","...7600007......................","..706000067.....................","..706000067.....................",".70060000607....................",".70060000607...........7........",".70060000607..........707.......",".70060000607.........704077.....",".70060000607.........70000077...",".70060000607.........700000007..",".70060000607........70000000007.",".700600006077777777770000005007.",".700600026222220000070000000007.",".7006000111111111111000000000447","..70600022222222222220003333007.","..7000001111111111111103333337..","...70000222222222222222233337...","...7000000000000000000007777....","....7700000000000000000077......","......770000333333333307007.....","........70033333333333370007....","........700033333333337.7007....",".......700000777777777..7007....",".......7000007..........70007...","........70007............7007...",".........777..............77....","................................","................................"]},"sunbird":{"p":["2e2a52","3d3a6b","5a45d0","22c4d6","3a3a48","ffffff","1a1420","6b4a2c","f0a020","c9a070","2b2233"],"r":["................................","................................","................................","................................","................................","................................","................................","................................","................................",".....................aaa........","...................aa222aa......","..................a2222222a.....","..................a3333222a.....",".................a333335622a....","...........aaaaaaa2333322244....",".........aa000000022222222444...","........a00000000002222222a444..",".......a001111310002222222a.444.","......a01111311131000222aa...44.","......a0113111131130000a........","......a0111111111100000a........","......a0111111111100000a........","....aa0000111111008800a.........","..aa00011000000000800a..........",".a00011100000000000aa...........","a0011100000aaa9aa9a.............","a1110000aaa..a9aa9a.............",".a000aaaaaaaaa9aa9aaaaaaaaaaa...","..aa7777777777977977777777777a..","...a7777777777777777777777777a..","....aaaaaaaaaaaaaaaaaaaaaaaaa...","................................"]},"tailorbird":{"p":["7d9a3a","5f7a2a","efe4c0","c8622a","ffffff","1a1420","d9a089","6b4a2c","4a3a30","2b2233"],"r":["................................","................................","....999.........................","...90119........................","...90019........................","....90019.......................","....90119.......................","....90119.......................","....900119......................",".....90119........99999.........",".....90119.......9333339........",".....90019......933333339.......","......90119.....9333333309......","......90119.....9333333309......","......90019.....90033300459.....","......9001199999900000222088....",".......90119000000000222229.88..",".......9000001000000002229......",".......900111111100000029.......","........9111111111000099........","........911111111100009.........","........911111111100009.........","........901111111222209.........",".........90021222222229.........",".........90022222222229.........","..........990226226229..........","............999622699...........","....9999999999969969999999999...","...977777777777677677777777779..","...977777777777777777777777779..","....9999999999999999999999999...","................................"]},"limeButterfly":{"p":["2a2530","f1ece0","d6402e","9c2a1e","15111a","e8d86a","0d0a10"],"r":["................................","................................","................................","................................","...6........6.......6.......6...","..606......646.....646.....606..","..6006......646...646.....6006..","..60006.....646...646....60006..",".60001066....646.646...6601006..",".600011006...6466646..600110006.",".6000010006...64446..6001100006.",".60000000006..6446..60000100006.","..6000000000666446660000000006..","...60000000000644600000000006...","....600000000104400100000006....",".....6000001100440001100006.....","......60011000044000001106......","......66100000044000000016......",".....6000000006446000000006.....","....600000000004400000000006....","....600000111104400111100006....","...60001111000044000001111006...","...60002000000044000000002006...","...60000000000044000000000006...","....600000000004400000000006....","....602000000004400000000026....",".....6000200206666002002006.....","......66666666....66666666......","................................","................................","................................","................................"]},"coppersmithBarbet":{"p":["5e9a34","2f5a22","d8e0a8","d8302a","f2d234","2a2a30","1a1420","6b4a2c","fff3b0","2b2233"],"r":["................................","................................","................................","................................","................................","................................",".....................99999......","..................999333339.....",".................9000333339.....","................90000333339.....","................900444444099....","................900000860055999.","..............9.9000000000555559","...........999099000000000555559",".........99000000033330000555559","........90111110003333000999999.",".......901111111003333999.......",".......911111111100009..........",".......911111111100009..........","......90111111111000009.........",".......911111111122009..........",".......901111111222209..........",".......900111110222229..........","......9000022022202229..........",".....9000010222022209...........","....9000110993223229............","...90011009.9399399.............","..901100999993993999999999999...","..9100077777737737777777777779..","...977777777777777777777777779..","....9999999999999999999999999...","................................"]},"hoopoe":{"p":["e6a470","1e1a24","f4efe4","6e4a36","fff3b0","1a1420","8a8a8a","b8744a","2b2233"],"r":["................................","...................8....8.......","..................818.8818......","..................80187818......","...............88.80077008...8..","..............810880007708.8818.","...............8100000000080018.","................80000000000088..",".................800000000008...","..................8000000008....","..................8000000008....","..................8000024508....",".................8000222553.....","................8000222222333...","...........8888880000222223333..","........888200000000077288.333..","......882212212000000008.....33.",".....8112212212210000008......3.",".....811221221221000008.........","....8111221221221100008.........",".....81122122122100008..........",".....81122122122100008..........","....881111111111100008..........","..8811110002000000008...........","88111121800000000008............","1111121128800600688.............","812111188..8868868..............","8122888.....868868..............",".8828.......868868..............","...8........868868..............",".............8..8...............","................................"]},"hornbill":{"p":["8a8780","4e4b4a","ece6d8","2f2c30","e8c040","b88a20","d8402a","1a1420","6b4a2c","a8a49a","f2dc80","2b2233"],"r":["................................","................................","................................","................................","................................","................................",".........................b......","..................bbb..bb3bbb...",".................b000bb33aaaab..","................b0000133333333b.","...............b0001111444444b..","...............b00011614444444b.","..............b0000111115555554b","..........bbbbbb0000010b4444444b","........bb1110000000000b55555b4b",".......b11111110000000b.bbbbbb4b","......b11111111100000b.......b4b","......b99111111100000b........b.",".....b119999111110000b..........","......b11119999100000b..........",".....bb11111119920000b..........","...bb0001111111222220b..........","..b001100011122222222b..........","..b000010022222222222b..........","..b000000022222222222b..........",".b000000000221222122b...........",".b00000000bbb12221bb............",".b2200bbbbbbb1bbb1bbbbbbbbbbb...","..bb2888888881888188888888888b..","...b8888888888888888888888888b..","....bbbbbbbbbbbbbbbbbbbbbbbbb...","................................"]}};
+  const LAND_SPRITE_CREDITS = {"honeybee":{"file":"Apis cerana 452202945.jpg","by":"bernhard_hiller","lic":"CC BY 4.0"},"gardenLizard":{"file":"Agamid lizard Calotes versicolor. Hot wall - Flickr - gailhampshire.jpg","by":"gailhampshire","lic":"CC BY 2.0"},"squirrel":{"file":"Funambulus pennantii 189596799.jpg","by":"Vijay Barve","lic":"CC BY 4.0"},"sunbird":{"file":"Cinnyris asiaticus 233584300.jpg","by":"Parth Kansara","lic":"CC BY 4.0"},"tailorbird":{"file":"00T4 Common tailorbird.jpg","by":"Drsssuresh1961","lic":"CC0"},"limeButterfly":{"file":"Common Mormon Papilio Polytes (3542224142).jpg","by":"Haneesh K M.","lic":"CC0"},"coppersmithBarbet":{"file":"Coppersmith Barbet (Megalaima haemacephala) calling in Hyderabad W IMG 8282.jpg","by":"J.M.Garg","lic":"CC BY 3.0"},"hoopoe":{"file":"Common Hoopoe (50845378146).jpg","by":"Tareq Uddin Ahmed","lic":"CC BY 2.0"},"hornbill":{"file":"Grey hornbill having breakfast.jpg","by":"Trikansh sharma","lic":"CC0"}};
+  const _landSpriteCache = {};
+  function landSpriteUrl(key) {
+    if (_landSpriteCache[key]) return _landSpriteCache[key];
+    const s = LAND_SPRITES[key];
+    if (!s) return null;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 32;
+    const cx = cv.getContext('2d');
+    s.r.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch === '.') continue;
+        cx.fillStyle = '#' + s.p[parseInt(ch, 36)];
+        cx.fillRect(x, y, 1, 1);
+      }
+    });
+    return (_landSpriteCache[key] = cv.toDataURL('image/png'));
+  }
+  // Sprite (or emoji fallback) for a creature. silhouette=true renders the unsighted,
+  // blacked-out version used by the Field Notebook until a creature's first sighting.
+  function landCreatureArt(c, px, silhouette) {
+    const url = landSpriteUrl(c.key);
+    const cls = 'land-creature-art' + (silhouette ? ' land-creature-sil' : '');
+    if (url) return `<img class="${cls}" data-creature="${c.key}" src="${url}" width="${px}" height="${px}" alt="${silhouette ? 'Unseen creature' : c.name}">`;
+    return `<span class="${cls} land-creature-emoji" data-creature="${c.key}" style="font-size:${Math.round(px * 0.7)}px;width:${px}px;height:${px}px">${c.icon}</span>`;
+  }
+
   const LAND_CREATURES = [
     {
       key: 'honeybee', name: 'Indian honeybee', icon: '🐝', tier: 0, minZoneVitality: 0.005,
@@ -1785,6 +1892,7 @@
     const coinsEarned = Math.round(landPlantValue(entry.key) * (1 + 0.1 * Math.min(generation, 5)));
     landCoins += coinsEarned;
     landSeedBank[entry.key] = Math.min(6, generation + 1);
+    if (landTutorial) landTutorial.acted = true;
     removeLandPlant(index, layer);
     return coinsEarned;
   }
@@ -1802,6 +1910,7 @@
     if (landGrowthStage(entry, plant.growthSpeed) !== 'mature') return;
     const trustEarned = Math.round(landPlantValue(entry.key) * 0.4);
     landTrust += trustEarned;
+    if (landTutorial) landTutorial.acted = true;
     removeLandPlant(index, layer);
     return trustEarned;
   }
@@ -2203,7 +2312,7 @@
     landPendingSightingToast = null;
     const el = document.getElementById('land-sighting-toast');
     if (!el) return;
-    el.innerHTML = `<span class="land-sighting-toast-icon">${c.icon}</span>
+    el.innerHTML = `<span class="land-sighting-toast-icon">${landCreatureArt(c, 28, false)}</span>
       <span class="land-sighting-toast-text"><b>${c.name}</b><br>${c.flavor}</span>`;
     el.classList.remove('hidden');
     el.classList.remove('land-sighting-toast-anim');
@@ -2211,9 +2320,54 @@
     el.classList.add('land-sighting-toast-anim');
     clearTimeout(showSightingToast._timer);
     showSightingToast._timer = setTimeout(() => el.classList.add('hidden'), 3200);
+    showLandReveal(c.key, true);
+  }
+
+  function renderLandCodex() {
+    const el = document.getElementById('land-codex');
+    if (!el) return;
+    el.innerHTML = LAND_CREATURES.map(c => {
+      const seen = !!landSightings[c.key];
+      return `<div class="land-codex-slot${seen ? ' seen' : ''}" data-creature="${c.key}" ${seen ? `onclick="showLandReveal('${c.key}', false)"` : ''} title="${seen ? c.name : 'Not yet sighted'}">
+        ${landCreatureArt(c, 36, !seen)}
+        <div class="land-codex-name">${seen ? c.name.replace(/ \/.*$/, '') : '???'}</div>
+      </div>`;
+    }).join('');
+    const cb = document.getElementById('land-codex-credits-body');
+    if (cb) {
+      cb.innerHTML = '<div>Sprites are original pixel art, drawn with reference to these open-licence photos on Wikimedia Commons:</div><ul>' +
+        LAND_CREATURES.filter(c => LAND_SPRITE_CREDITS[c.key]).map(c => {
+          const k = LAND_SPRITE_CREDITS[c.key];
+          return `<li>${c.name} — ${k.by}, ${k.lic} (<a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(k.file.replace(/ /g, '_'))}" target="_blank" rel="noopener" class="underline">source</a>)</li>`;
+        }).join('') + '</ul>';
+    }
+  }
+  // Reveal card: the Pokédex-style moment for a creature's first sighting (isNew) and,
+  // later, a re-read of any sighted slot. No battling or capturing — only looking.
+  function showLandReveal(key, isNew) {
+    const c = LAND_CREATURES.find(x => x.key === key);
+    const el = document.getElementById('land-reveal');
+    if (!c || !el) return;
+    const k = LAND_SPRITE_CREDITS[c.key];
+    el.innerHTML = `<div class="land-reveal-art">${landCreatureArt(c, 64, false)}</div>
+      <div class="land-reveal-body">
+        <div class="land-reveal-kicker">${isNew ? 'New in your Field Notebook' : 'Field Notebook'}</div>
+        <div class="land-reveal-name">${c.name}</div>
+        <div class="land-reveal-flavor">${c.flavor}</div>
+        ${k ? `<div class="land-reveal-credit">Drawn with reference to a photo by ${k.by} · ${k.lic}</div>` : ''}
+      </div>
+      <button class="land-reveal-close" aria-label="Close" onclick="hideLandReveal()">✕</button>`;
+    el.classList.remove('hidden');
+    clearTimeout(showLandReveal._timer);
+    showLandReveal._timer = setTimeout(hideLandReveal, isNew ? 7000 : 12000);
+  }
+  function hideLandReveal() {
+    const el = document.getElementById('land-reveal');
+    if (el) el.classList.add('hidden');
   }
 
   function renderLandSightingsJournal() {
+    renderLandCodex();
     const el = document.getElementById('land-sightings');
     if (!el) return;
     const entries = Object.entries(landSightings)
@@ -2226,7 +2380,7 @@
     }
     el.innerHTML = entries.map(({ creature, sighting }) => `
       <div class="land-sighting-entry${creature.tier >= 3 ? ' land-sighting-rare' : ''}">
-        <span class="land-sighting-icon">${creature.icon}</span>
+        <span class="land-sighting-icon">${landCreatureArt(creature, creature.tier >= 3 ? 36 : 28, false)}</span>
         <div class="land-sighting-body">
           <div class="land-sighting-top">
             <span class="land-sighting-name">${creature.name}</span>
@@ -2376,6 +2530,7 @@
   // shows through, which is what keeps the pattern continuous across tile boundaries
   // instead of resetting at every seam.
   function landTileColor(tile) {
+    if (landViewMode === 'world') return 'rgba(0,0,0,0)';
     if (landViewMode === 'elevation') return hexToRgba(LAND_ELEV_HEX[tile.elevation], LAND_ELEV_ALPHA);
     if (landViewMode === 'daylight') return hexToRgba(tile.sunDuration === 'full' ? LAND_TWOTONE_HEX.daylight.full : LAND_TWOTONE_HEX.daylight.short, LAND_TWOTONE_ALPHA);
     if (landViewMode === 'wind') return hexToRgba(tile.windExposure === 'open' ? LAND_TWOTONE_HEX.wind.open : LAND_TWOTONE_HEX.wind.sheltered, LAND_TWOTONE_ALPHA);
@@ -2422,6 +2577,10 @@
   const LAND_WATER_SEG_LABEL = { runoff: 'Wet', moist: 'Moist', dry: 'Dry' };
   function updateLandLegend() {
     const el = document.getElementById('land-legend');
+    if (landViewMode === 'world') {
+      el.innerHTML = '<div class="land-legend-endcaps"><span>Tap a tile to plant or inspect · switch to a lens to see elevation, daylight, wind or water</span></div>';
+      return;
+    }
     if (landViewMode === 'elevation') {
       const segs = LAND_ELEV_HEX.map((hex, i) => `<div class="land-legend-seg" style="background:${hex};">${i}</div>`).join('');
       el.innerHTML = `
@@ -2488,9 +2647,96 @@
       <div class="text-stone-400">${waterNote}</div>`;
   }
 
+  // Ground atlas index: 0-6 grass variants, 7-11 sand/dirt, 12-15 water frames
+  // (animated by CSS, so any index >=12 just means "water"). Plain variants dominate;
+  // the flowered/patched ones are rare so the field reads natural, not wallpapered.
+  const LAND_GRASS_PICK = [0,1,2,0,3,4,1,0,2,5,3,0,4,1,6,2];
+  const LAND_DIRT_PICK = [7,8,9,7,10,11,8,7];
+  function landGroundIndex(tile) {
+    if (tile.element === 'pond') return 12;
+    const h = (tile.r * 31 + tile.c * 17 + tile.r * tile.c * 5) >>> 0;
+    if (tile.moistureProfile === 'dry') return LAND_DIRT_PICK[h % LAND_DIRT_PICK.length];
+    return LAND_GRASS_PICK[h % LAND_GRASS_PICK.length];
+  }
+  // The lens is an overlay now, so it is dialed back from the old near-opaque fill.
+  function landOverlayColor(tile) {
+    return landTileColor(tile).replace(/,\s*[\d.]+\)$/, ', 0.42)');
+  }
+  // Sand shore on pond sides that face non-pond tiles, so water meets grass with a
+  // visible bank instead of a hard square.
+  function landShoreShadow(tile) {
+    const sides = [['top',-1,0],['bottom',1,0],['left',0,-1],['right',0,1]];
+    const sh = ['inset 0 0 0 1px rgba(40,70,20,0.22)'];
+    sides.forEach(([side,dr,dc]) => {
+      const n = landTileAt(tile.r + dr, tile.c + dc);
+      if (n && n.element === 'pond') return;
+      const x = side === 'left' ? 4 : side === 'right' ? -4 : 0;
+      const y = side === 'top' ? 4 : side === 'bottom' ? -4 : 0;
+      sh.push(`inset ${x}px ${y}px 0 0 #e8cfa6`);
+    });
+    return sh.join(', ');
+  }
+
+
+  // ---------- Guided tutorial (Oct 2026) ----------
+  // Seven short steps that teach the core loop on the land itself: look, plant a
+  // canopy, build a guild, shape water, wait, harvest/share, then the payoff. Each
+  // step advances only when the game state shows the player did it, so it can never
+  // get stuck behind a click it expected. Starter fund covers the first plantings.
+  let landTutorial = null; // null = never started; { step, done, acted, granted }
+  const LAND_TUTORIAL_FUND = 80;
+  function landTileList() { return landPlot ? landPlot.tiles : []; }
+  function landAnyPlanted(minLayers) {
+    return landTileList().some(t => LAND_LAYERS.filter(l => t.plants[l]).length >= minLayers);
+  }
+  const LAND_TUTORIAL_STEPS = [
+    { title: 'Welcome to your plot', body: 'You are restoring a real piece of land. Green ground is grass, sand is dry earth, and blue is water. Tap Show me for a two-minute walk-through. You can skip it any time.', manual: 'Show me' },
+    { title: 'Look at the land', body: 'Tap any tile to observe it. The panel below the map tells you how wet, sunny and windy it is. Good planting starts with reading the ground.', done: () => selectedLandTile !== null },
+    { title: 'Plant a canopy tree', body: 'In the panel below, tap the Canopy row and pick Mexican Lilac (Glyricidia). It grows fast, fixes nitrogen and shelters everything else. We added a small starter fund of 🪙80 so you can afford it.', done: () => landTileList().some(t => t.plants.canopy) },
+    { title: 'Build a guild', body: 'Plants in different layers help each other. On the same tile, add something to another layer, such as a Climber or Groundcover, and watch the fit score. A tile with several layers is a food forest in miniature.', done: () => landAnyPlanted(2) },
+    { title: 'Shape the water', body: 'Tap a tile and choose "Place a design element". A pond holds water and attracts wildlife, a swale slows runoff so the soil can drink.', done: () => landTileList().some(t => t.element) },
+    { title: 'Let time pass', body: 'Every few actions a day passes by itself, or tap "Let a day pass". Watch your seedling grow into an established plant and then a mature one.', done: () => landTileList().some(t => LAND_LAYERS.some(l => t.plants[l] && landGrowthStage(t.plants[l], LAND_PLANTS[t.plants[l].key].growthSpeed) === 'mature')) },
+    { title: 'Harvest or share', body: 'Tap a mature plant. Harvest it for coins, or give it away for trust with your village. Harvesting saves its seed, so your next planting of it is cheaper and stronger.', done: () => !!(landTutorial && landTutorial.acted) },
+    { title: 'You are ready', body: 'As your plot grows greener, zone vitality rises and wildlife starts to visit. Check the Field Notebook to see who has arrived. Good luck, steward.', manual: 'Start restoring' },
+  ];
+  function startLandTutorial() {
+    landTutorial = { step: 0, done: false, acted: false, granted: false };
+    renderLandTutorial(); saveGame();
+  }
+  function skipLandTutorial() { landTutorial = { ...(landTutorial || {}), done: true }; renderLandTutorial(); saveGame(); }
+  function landTutorialNext() {
+    if (!landTutorial || landTutorial.done) return;
+    if (landTutorial.step === 0 && !landTutorial.granted) { landCoins += LAND_TUTORIAL_FUND; landTutorial.granted = true; renderLandGrid(); }
+    landTutorial.step++;
+    if (landTutorial.step >= LAND_TUTORIAL_STEPS.length) landTutorial.done = true;
+    renderLandTutorial(); saveGame();
+  }
+  function updateLandTutorial() {
+    if (!landTutorial || landTutorial.done) { renderLandTutorial(); return; }
+    const st = LAND_TUTORIAL_STEPS[landTutorial.step];
+    if (st && st.done && st.done()) { landTutorialNext(); return; }
+    renderLandTutorial();
+  }
+  function renderLandTutorial() {
+    const el = document.getElementById('land-tutorial');
+    if (!el) return;
+    if (!landTutorial || landTutorial.done) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+    const st = LAND_TUTORIAL_STEPS[landTutorial.step];
+    const n = LAND_TUTORIAL_STEPS.length;
+    el.classList.remove('hidden');
+    el.innerHTML = `<div class="land-tutorial-step">STEP ${landTutorial.step + 1} OF ${n}</div>
+      <div class="land-tutorial-title">${st.title}</div>
+      <div class="land-tutorial-body">${st.body}</div>
+      <div class="land-tutorial-actions">
+        ${st.manual ? `<button class="land-tutorial-btn" onclick="landTutorialNext()">${st.manual}</button>` : ''}
+        <a href="#" class="land-tutorial-skip" onclick="skipLandTutorial(); return false;">Skip tutorial</a>
+      </div>
+      <div class="land-tutorial-bar"><div style="width:${Math.round((landTutorial.step) / (n - 1) * 100)}%"></div></div>`;
+  }
+
   function renderLandGrid() {
     const gridEl = document.getElementById('land-grid');
-    gridEl.style.gridTemplateColumns = `repeat(${LAND_COLS}, minmax(0, 1fr))`;
+    gridEl.style.gridTemplateColumns = `repeat(${LAND_COLS}, var(--land-tile-px, 50px))`;
     gridEl.innerHTML = '';
     landPlot.tiles.forEach((tile, i) => {
       const cell = document.createElement('div');
@@ -2498,16 +2744,16 @@
       // backgroundColor only (not the `background` shorthand) — the shorthand would
       // reset backgroundImage to 'none' and wipe out the CSS-level grass texture
       // (or the pond override just below) set on every .land-tile.
-      cell.style.backgroundColor = landTileColor(tile);
-      // A placed pond (LAND_ELEMENTS) gets real water texture instead of grass —
-      // the concrete "blue water for ponds... rendered properly" ask (Sept 12
-      // 2026 flag). Dry-moisture tiles (bare earth, nothing holding water) get the
-      // dirt texture instead of grass (Sept 13 2026 visual-overhaul pass) — pond
-      // overrides dryness if both are somehow true, since standing water wins visually.
-      // Everything else keeps the default grass texture from CSS.
-      if (tile.element === 'pond') cell.style.backgroundImage = 'var(--land-tex-water)';
-      else if (tile.moistureProfile === 'dry') cell.style.backgroundImage = 'var(--land-tex-dirt)';
+      // World tiles (Phase A, Oct 2026): ground art is always the base. Variant is
+      // deterministic per tile (stable across repaints). The data lens is a separate
+      // translucent .land-tint overlay child, never the terrain itself.
+      const gi = landGroundIndex(tile);
+      cell.style.backgroundPosition = `${(gi / 15 * 100).toFixed(4)}% 0`;
+      if (gi >= 12) { cell.classList.add('land-tile-water'); cell.style.backgroundPosition = ''; }
+      cell.dataset.ground = gi >= 12 ? 'water' : gi >= 7 ? 'dirt' : 'grass';
+      cell.dataset.tint = landTileColor(tile);
       if (i === selectedLandTile) cell.style.boxShadow = 'inset 0 0 0 3px #34d399';
+      else if (tile.element === 'pond') cell.style.boxShadow = landShoreShadow(tile);
       cell.onclick = () => showLandTileInfo(i);
 
       // Cliff lips (elevation-driven, constant across view modes) are the only thing
@@ -2518,7 +2764,8 @@
         const w = e.diff >= 2 ? '7px' : '4px';
         return `<div class="cliff-edge cliff-${e.side}" style="--w:${w};"></div>`;
       }).join('');
-      cell.innerHTML = edgeHtml + landGrowthOverlayHtml(tile) + landElementIconHtml(tile);
+      const tintHtml = landViewMode === 'world' ? '' : `<div class="land-tint" style="background:${landOverlayColor(tile)};"></div>`;
+      cell.innerHTML = tintHtml + edgeHtml + landGrowthOverlayHtml(tile) + landElementIconHtml(tile);
       gridEl.appendChild(cell);
     });
     document.getElementById('land-seed-label').innerText = landPlot.seed;
@@ -2532,6 +2779,7 @@
     renderLandSightingsJournal();
     showSightingToast();
     renderVillagePanel();
+    updateLandTutorial();
   }
 
   // Terra Nil-style growth visual (replaces the old flat "planted" dot, Aug 25 2026):
@@ -2572,12 +2820,26 @@
     // else (swale, checkdam, terracing, keyhole, herbspiral, banana circle, nursery)
     // is an earthwork/layout shape no farm-sprite pack draws, so those still use
     // their LAND_ELEMENTS emoji glyph pending hand-illustrated or open-source art.
+    if (tile.element === 'pond') return ''; // the animated water tile itself is the pond
     if (tile.element === 'hedge') {
-      return `<span class="land-element-icon land-element-sprite" title="${el.name}" style="background-image: var(--land-sprite-understory);"></span>`;
+      return `<span class="land-element-icon land-element-sprite" title="${el.name}" ></span>`;
     }
     return `<span class="land-element-icon" title="${el.name}">${el.icon}</span>`;
   }
 
+  // Phase B (Oct 2026): one bottom-anchored sprite per planted layer, picking the
+  // real growth frame (seedling / establishing / mature) from the plant atlas. Layers
+  // get fixed lanes (x offset + draw order) so a full food-forest tile reads as a
+  // little scene: canopy behind, ground layers in front.
+  const LAND_LAYER_LANE = {
+    canopy:      { x: 50, z: 1, size: 1.0,  bottom: 14 },
+    understory:  { x: 24, z: 2, size: 0.62, bottom: 4 },
+    shrub:       { x: 76, z: 3, size: 0.56, bottom: 4 },
+    climber:     { x: 62, z: 4, size: 0.46, bottom: 2 },
+    groundcover: { x: 36, z: 5, size: 0.36, bottom: 2 },
+    root:        { x: 52, z: 6, size: 0.4,  bottom: 0 },
+  };
+  const LAND_STAGE_COL = { seedling: 0, establishing: 50, mature: 100 };
   function landGrowthOverlayHtml(tile) {
     const dominant = landDominantLayer(tile);
     return LAND_LAYERS.map((layer, layerIdx) => {
@@ -2585,39 +2847,15 @@
       if (!entry) return '';
       const plant = LAND_PLANTS[entry.key];
       const stage = landGrowthStage(entry, plant.growthSpeed);
-      const factor = LAND_GROWTH_FACTOR[stage];
-      const size = Math.max(4, Math.round(LAND_LAYER_VISUAL_WEIGHT[layer] * factor));
-      const seedX = (tile.r * 13 + tile.c * 7 + layerIdx * 5) % 10;
-      const seedY = (tile.r * 7 + tile.c * 11 + layerIdx * 3) % 10;
-      const leftPct = (14 + seedX * 7.2).toFixed(1);
-      const topPct = (14 + seedY * 7.2).toFixed(1);
-      const alpha = (0.16 + factor * 0.52).toFixed(2);
-      const alphaEdge = (alpha * 0.55).toFixed(2);
-      let html = `<span class="land-growth-blob" style="width:${size}px; height:${size}px; left:${leftPct}%; top:${topPct}%; background: radial-gradient(circle, rgba(94,178,94,${alpha}) 0%, rgba(52,120,58,${alphaEdge}) 65%, rgba(52,120,58,0) 100%);"></span>`;
-      // Every planted layer gets its own identity icon, riding on its own blob so it
-      // reads as "part of" the greenery rather than a separate marker (AV's Sep 12
-      // 2026 call — previously only the dominant layer got an icon to avoid clutter;
-      // now every layer shows so the full stack is scannable at the grid level). The
-      // dominant layer's icon still renders largest/brightest; the rest scale down
-      // by their own layer weight so a canopy tree doesn't get visually buried under
-      // five smaller-layer glyphs. Floors keep even a same-day seedling icon legible.
+      const lane = LAND_LAYER_LANE[layer];
       const isDominant = layer === dominant;
-      const weightScale = LAND_LAYER_VISUAL_WEIGHT[layer] / LAND_LAYER_VISUAL_WEIGHT.canopy;
-      const iconSize = ((isDominant ? 11 : 8) + factor * (isDominant ? 5 : 3.5) * weightScale).toFixed(1);
-      const iconOpacity = ((isDominant ? 0.55 : 0.42) + factor * (isDominant ? 0.45 : 0.4)).toFixed(2);
-      // Real sprite art (Sept 13 2026), keyed by layer not species — see
-      // LAND_LAYER_SPRITE_VAR. Same size/position/opacity math as the emoji it
-      // replaces; plant.name now carries the identity via title (hover), since the
-      // sprite itself can't spell out "Karanj" the way an emoji label implied one.
-      const spriteVar = LAND_LAYER_SPRITE_VAR[layer];
-      html += `<span class="land-growth-sprite${isDominant ? ' land-growth-sprite-dominant' : ''}" title="${plant.name}" style="left:${leftPct}%; top:${topPct}%; width:${iconSize}px; height:${iconSize}px; opacity:${iconOpacity}; background-image: var(${spriteVar});"></span>`;
-      // A tile-corner pest badge — scannable across the whole 64-tile grid at a
-      // glance, same purpose as the balcony game's pulsing rose border on an
-      // infested cell, just sized for a much smaller tile here.
+      const row = LAND_ATLAS_ROW[layer];
+      let html = `<span class="land-growth-sprite${isDominant ? ' land-growth-sprite-dominant' : ''}" data-layer="${layer}" data-stage="${stage}" title="${plant.name}" style="left:${lane.x}%; bottom:${lane.bottom}%; z-index:${lane.z}; width:calc(var(--land-tile-px, 50px) * ${lane.size}); height:calc(var(--land-tile-px, 50px) * ${lane.size}); background-position: ${LAND_STAGE_COL[stage]}% ${(row / 6 * 100).toFixed(3)}%;"></span>`;
       if (entry.hasPests) html += `<span class="land-pest-badge">🐛</span>`;
       return html;
     }).join('');
   }
+  const LAND_ATLAS_ROW = { canopy: 0, understory: 1, shrub: 2, groundcover: 3, climber: 4, root: 5 };
 
   // Builds the terrain read-out (unchanged) plus the new plant-stack panel: one row
   // per layer slot, occupied slots showing what's planted and its live fit against
@@ -3007,7 +3245,7 @@
 
   function setLandViewMode(mode) {
     landViewMode = mode;
-    ['elevation', 'daylight', 'wind', 'water'].forEach(m => {
+    ['world', 'elevation', 'daylight', 'wind', 'water'].forEach(m => {
       const btn = document.getElementById(`landview-${m}`);
       if (!btn) return;
       btn.className = m === mode
@@ -3026,6 +3264,7 @@
     if (!landSeed) landSeed = Math.floor(Math.random() * 2147483647);
     if (!landPlot || landPlot.seed !== landSeed) regenerateLandPlot(landSeed);
     selectedLandTile = null;
+    if (!landTutorial) landTutorial = { step: 0, done: false, acted: false, granted: false };
     document.getElementById('land-tile-info').innerHTML = '<span class="text-stone-500">Tap a tile to observe it.</span>';
     const tilePopup = document.getElementById('land-tile-popup');
     if (tilePopup) tilePopup.classList.add('hidden');
@@ -3944,7 +4183,7 @@
       hasHarvestedOnce, hintShownSellSave, hintShownGuildEffect, unlockToastShown,
       landSeed, landPlantings, landElements, landDay, landSightings,
       landPestEverResolved, landLastPestDay,
-      landCoins, landTrust, landSeedBank,
+      landCoins, landTrust, landSeedBank, landTutorial,
     };
   }
 
@@ -3987,6 +4226,8 @@
     landCoins = s.landCoins != null ? s.landCoins : 50; // older saves predate the economy — fine to start at the default
     landTrust = s.landTrust || 0;
     landSeedBank = s.landSeedBank || {};
+    // Older saves predate the tutorial: anyone who already planted has no need for it.
+    landTutorial = s.landTutorial || (Object.keys(s.landPlantings || {}).length ? { step: 0, done: true } : null);
     normalizeLandPlantings(); // migrates any pre-growth-clock save (plain string plant keys)
     return true;
   }
@@ -4019,19 +4260,10 @@
   const restoredSave = loadGame();
   renderCityCards();
 
-  if (restoredSave && currentScreen === 'game') {
-    document.getElementById('screen-title').classList.add('hidden');
-    document.getElementById('screen-city-select').classList.add('hidden');
-    document.getElementById('screen-game').classList.remove('hidden');
-    renderToolGrid();
-    renderMarketBoard();
-    selectTool('water');
-    updateActionProgressUI();
-    render();
-    logMsg(`Welcome back to your ${CITIES[currentCity].name} balcony!`);
-  } else if (restoredSave && currentScreen === 'city-select') {
-    document.getElementById('screen-title').classList.add('hidden');
-    document.getElementById('screen-city-select').classList.remove('hidden');
+  if (restoredSave && currentScreen !== 'land') {
+    // The balcony game was cut (Oct 2026) — a stale save pointing at it lands on the title.
+    currentScreen = 'title';
+    document.getElementById('screen-title').classList.remove('hidden');
   } else if (restoredSave && currentScreen === 'land') {
     document.getElementById('screen-title').classList.add('hidden');
     document.getElementById('screen-land').classList.remove('hidden');
