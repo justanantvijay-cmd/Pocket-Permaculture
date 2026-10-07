@@ -2156,7 +2156,7 @@
     accountState = 'working'; accountError = ''; renderAccountPanel();
     try {
       ensureSupabaseClient();
-      const { data, error } = await villageClient.auth.signUp({ email, password });
+      const { data, error } = await villageClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } });
       if (error) throw error;
       // Some Supabase projects require email confirmation before a session exists —
       // handle both: a session means we're straight in, no session means "check your
