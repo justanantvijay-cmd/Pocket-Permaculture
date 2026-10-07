@@ -8,6 +8,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Pocket Permaculture</title>
+<meta name="description" content="Restore a plot of land into a living food forest. A small, free permaculture game.">
+<meta name="theme-color" content="#e6f4cf">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta property="og:title" content="Pocket Permaculture">
+<meta property="og:description" content="Restore a plot of land into a living food forest and welcome the wildlife home.">
+<meta property="og:image" content="https://justanantvijay-cmd.github.io/Pocket-Permaculture/icons/share.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -134,6 +144,19 @@
     content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
     background: repeating-linear-gradient(180deg, rgba(0,0,0,0.0) 0 6px, rgba(60,40,15,0.45) 6px 8px);
   }
+  .pp-footer-links { font-size: 11px; color: #6b7a58; }
+  .pp-footer-links a { color: #4b5d3a; text-decoration: underline; }
+  .pp-modal { position: fixed; inset: 0; z-index: 100; background: rgba(20,30,15,.55); display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .pp-modal.hidden { display: none; }
+  .pp-modal-card { position: relative; background: #fffdf3; color: #2b3a1f; width: 100%; max-width: 440px; max-height: 86vh; overflow-y: auto; border-radius: 16px; padding: 18px 16px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.45); font-size: 13px; line-height: 1.5; }
+  .pp-modal-card h2 { font-size: 18px; font-weight: 800; color: #2f6b2f; margin-bottom: 6px; }
+  .pp-modal-card h3 { font-size: 13px; font-weight: 800; margin: 12px 0 2px; color: #3d5a2a; }
+  .pp-modal-card ul { margin: 4px 0 4px 16px; list-style: disc; }
+  .pp-modal-card a { color: #2f6b2f; text-decoration: underline; }
+  .pp-modal-close { position: absolute; top: 8px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: #eef3dc; font-size: 14px; }
+  .pp-big-btn { margin-top: 12px; background: #f59e0b; color: #3b2a00; font-weight: 800; padding: 10px 22px; border-radius: 12px; box-shadow: 0 3px 0 #b86f00; }
+  .pp-danger-btn { margin-top: 8px; background: #b91c1c; color: #fff; font-weight: 700; padding: 9px 14px; border-radius: 10px; width: 100%; }
+  .pp-ghost-btn { margin-top: 8px; background: #eef3dc; color: #3d5a2a; font-weight: 700; padding: 9px 14px; border-radius: 10px; width: 100%; }
   .land-tile-popin { animation: land-popin .45s cubic-bezier(.2,1.6,.4,1) 1; }
   @keyframes land-popin { 0% { transform: scale(.6); } 100% { transform: scale(1); } }
   .land-coin-float {
@@ -686,6 +709,7 @@
 </head>
 <body class="bg-moss-950 text-stone-100 font-body min-h-screen flex flex-col items-center p-3">
   <button id="sound-toggle" onclick="landToggleMute()" aria-label="Sound on" title="Sound on/off" style="position:fixed;top:8px;right:8px;z-index:60;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.2);font-size:16px;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.3);">🔊</button>
+  <div id="info-modal" class="pp-modal hidden" role="dialog" aria-modal="true"><div class="pp-modal-card"><button class="pp-modal-close" onclick="closeInfoModal()" aria-label="Close">✕</button><div id="info-modal-body"></div></div></div>
   <button id="music-toggle" onclick="landToggleMusic()" aria-label="Music on" title="Music on/off" style="position:fixed;top:8px;right:48px;z-index:60;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.2);font-size:16px;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.3);">🎵</button>
 
   <!-- ============ TITLE SCREEN ============ -->
@@ -727,6 +751,7 @@
     <div id="account-panel" class="w-full px-6 text-[10px]"></div>
 
     <button id="title-start-btn" onclick="showLandScreen()" class="mt-2 bg-gold-600 hover:bg-gold-500 text-moss-950 font-display font-bold py-3 px-8 rounded-xl shadow-lg">Start Restoring →</button>
+    <div class="pp-footer-links"><a href="#" onclick="openInfoModal('privacy'); return false;">Privacy</a> · <a href="#" onclick="openInfoModal('credits'); return false;">Credits</a> · <a href="#" onclick="openFeedback(); return false;">Send feedback</a></div>
   </div>
 
   <!-- ============ THE LAND (early preview — terrain model only, no plants/elements yet) ============ -->
@@ -740,7 +765,7 @@
       <h1 class="font-display text-2xl font-bold text-gold-400 tracking-wide">The Land</h1>
       <p class="text-stone-500 text-[10px] px-4 leading-relaxed">Tap a tile to observe its terrain, then plant a food-forest stack in it — canopy down to root, each layer checked against the real ground and its neighbors.</p>
     </header>
-    <div class="text-center -mt-2"><a href="#" onclick="startLandTutorial(); return false;" class="text-[10px] text-stone-500 underline">Replay the tutorial</a></div>
+    <div class="text-center -mt-2"><a href="#" onclick="startLandTutorial(); return false;" class="text-[10px] text-stone-500 underline">Replay the tutorial</a> · <a href="#" onclick="openInfoModal('privacy'); return false;" class="text-[10px] text-stone-500 underline">Privacy</a> · <a href="#" onclick="openInfoModal('credits'); return false;" class="text-[10px] text-stone-500 underline">Credits</a> · <a href="#" onclick="openFeedback(); return false;" class="text-[10px] text-stone-500 underline">Feedback</a></div>
 
     <div class="bg-moss-800 rounded-xl p-3 shadow-xl border border-moss-700">
       <div class="flex justify-between items-center mb-2 text-[10px]">
@@ -2333,7 +2358,7 @@
           <span class="text-gold-300 font-medium">👤 ${accountUser.email}</span>
           <button class="account-btn account-btn-secondary" style="flex:none;padding:4px 10px;" onclick="accountSignOut()">Sign out</button>
         </div>
-        <div class="account-status">Progress syncs to your account — pick up where you left off on any device.</div>
+        <div class="account-status">Progress syncs to your account — pick up where you left off on any device. <a href="#" onclick="openInfoModal('privacy'); return false;" style="text-decoration:underline">Privacy and delete my data</a></div>
       </div>`;
       return;
     }
@@ -3279,6 +3304,89 @@
     if (b) { b.textContent = landMuted ? '🔇' : '🔊'; b.setAttribute('aria-label', landMuted ? 'Sound off' : 'Sound on'); }
     if (landMuted) landStopMusic(); else landStartMusic();
     landSound('step');
+  }
+
+
+  // ---- Privacy, credits, feedback, data deletion (Oct 2026) ----
+  const FEEDBACK_URL = 'https://github.com/justanantvijay-cmd/Pocket-Permaculture/issues/new?title=Pocket+Permaculture+feedback&body=What+happened%3F+What+did+you+expect%3F';
+  function openFeedback() { window.open(FEEDBACK_URL, '_blank', 'noopener'); }
+  function closeInfoModal() { document.getElementById('info-modal').classList.add('hidden'); }
+  function openInfoModal(which) {
+    const body = document.getElementById('info-modal-body');
+    body.innerHTML = which === 'privacy' ? privacyHtml() : creditsHtml();
+    document.getElementById('info-modal').classList.remove('hidden');
+  }
+  function privacyHtml() {
+    const signed = accountState === 'signed_in' && accountUser;
+    return `<h2>Privacy</h2>
+      <p>Pocket Permaculture is a small free game. We collect as little as possible. Last updated 7 October 2026.</p>
+      <h3>What stays on your device</h3>
+      <p>Your game progress, sound settings and tutorial state are saved in this browser (local storage). No account is needed to play.</p>
+      <h3>If you create an account</h3>
+      <ul><li>Your email address and a password (stored by our login provider, hashed, never visible to us).</li>
+      <li>A copy of your game save, so you can continue on another device.</li></ul>
+      <h3>If you join the village</h3>
+      <ul><li>An anonymous ID and a snapshot of your plot: how healthy it is, how many plants of each layer and how many design elements you have, your day count and trust score.</li>
+      <li>Seeds you donate or claim. Other players see only these totals, never your name or email.</li></ul>
+      <h3>What we do not do</h3>
+      <p>No ads, no analytics, no tracking, no selling or sharing of data. We never ask for your location, contacts or photos.</p>
+      <h3>Who handles your data</h3>
+      <ul><li>Supabase hosts accounts and saves (region: Mumbai, India).</li>
+      <li>GitHub Pages hosts the game and the jsDelivr network delivers the Supabase code, so they may see your IP address in routine server logs.</li></ul>
+      <h3>How long we keep it</h3>
+      <p>Until you delete it. Inactive accounts may be removed after a long period.</p>
+      <h3>Your choices</h3>
+      <p>You can delete everything at any time with the buttons below. Deleting an account removes your email, your cloud save and your village records. Seeds you donated stay in the village library but are no longer linked to you.</p>
+      ${signed ? `<div class="account-status" style="color:#6b7a58">Signed in as ${accountUser.email}</div>` : ''}
+      <button class="pp-danger-btn" onclick="confirmDeleteData()">Delete my data${signed ? ' and account' : ''}</button>
+      <h3>Questions</h3>
+      <p>Use <a href="#" onclick="openFeedback(); return false;">Send feedback</a> and we will get back to you. This game is not designed for children under 13.</p>`;
+  }
+  function creditsHtml() {
+    const sounds = LAND_SOUND_CREDITS.map(c => `<li>${c[0]} — ${c[1]}, ${c[2]} (<a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(c[3])}" target="_blank" rel="noopener">source</a>)</li>`).join('');
+    const creatures = LAND_CREATURES.filter(c => LAND_SPRITE_CREDITS[c.key]).map(c => { const k = LAND_SPRITE_CREDITS[c.key]; return `<li>${c.name} — photo by ${k.by}, ${k.lic}</li>`; }).join('');
+    return `<h2>Credits</h2>
+      <h3>Art</h3>
+      <ul><li><a href="https://cupnooble.itch.io/sprout-lands-asset-pack" target="_blank" rel="noopener">Sprout Lands</a> by Cup Nooble: terrain, plants, trees and the landing scene (free, non-commercial licence).</li>
+      <li>Cozy Farm by shubibubi: plant growth frames (free, non-commercial licence).</li>
+      <li><a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> RPG Base tiles (CC0).</li>
+      <li>Wildlife sprites: original pixel art, drawn with reference to these open-licence photos on Wikimedia Commons:<ul>${creatures}</ul></li></ul>
+      <h3>Sound</h3>
+      <p>Calls and music: open-licence recordings from Wikimedia Commons. Clicks: Kenney UI Audio (CC0). Recordings were trimmed and compressed.</p>
+      <ul>${sounds}</ul>
+      <h3>Made by</h3><p>Pocket Permaculture is a solo project. Thank you to the artists, recordists and naturalists above.</p>`;
+  }
+  function confirmDeleteData() {
+    const signed = accountState === 'signed_in' && accountUser;
+    document.getElementById('info-modal-body').innerHTML = `<h2>Delete my data?</h2>
+      <p>This permanently erases your progress on this device${signed ? ', your cloud save, your village records and your account' : ' and any village records linked to this browser'}. It cannot be undone.</p>
+      <button class="pp-danger-btn" onclick="deleteMyData()">Yes, delete everything</button>
+      <button class="pp-ghost-btn" onclick="openInfoModal('privacy')">Cancel</button>`;
+  }
+  async function deleteMyData() {
+    const body = document.getElementById('info-modal-body');
+    body.innerHTML = '<h2>Deleting…</h2><p>One moment.</p>';
+    let cloudNote = '';
+    try {
+      if (villageClient) {
+        const { data: sess } = await villageClient.auth.getSession();
+        if (sess && sess.session) {
+          const { error } = await villageClient.rpc('delete_my_data');
+          if (error) {
+            // Function not installed or blocked: remove what the player's own permissions allow.
+            await villageClient.from('player_saves').delete().eq('user_id', sess.session.user.id);
+            cloudNote = 'Your cloud save was removed, but your login could not be removed automatically. Use Send feedback and ask us to finish deleting it.';
+          } else cloudNote = 'Your account and cloud data were deleted.';
+          try { await villageClient.auth.signOut(); } catch (e) {}
+        }
+      }
+    } catch (e) { cloudNote = 'We could not reach the server, so cloud data was not deleted. Try again later or use Send feedback.'; }
+    try {
+      localStorage.removeItem(SAVE_KEY); localStorage.removeItem('pp_muted'); localStorage.removeItem('pp_music_off');
+      Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k) || /pocketPermaculture/i.test(k)).forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+    accountUser = null; accountState = 'idle';
+    body.innerHTML = `<h2>Done</h2><p>Your data on this device was erased. ${cloudNote}</p><button class="pp-big-btn" onclick="location.reload()">Start fresh</button>`;
   }
 
   // ---- Costs & feedback (Oct 2026) ----
@@ -4670,5 +4778,6 @@
     }
   })();
 </script>
+<script>if('serviceWorker' in navigator && /^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </body>
 </html>
